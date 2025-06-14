@@ -52,7 +52,13 @@ const Canvas: React.FC = () => {
 
   // Atualiza dados do node (label/cor)
   const updateNodeData = (id: string, newData: any) => {
-    setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, ...newData } } : n));
+    setNodes((nds) => nds.map((n) => {
+      if (n.id !== id) return n;
+      if (newData._move) {
+        return { ...n, position: { x: newData._move.x, y: newData._move.y } };
+      }
+      return { ...n, data: { ...n.data, ...newData } };
+    }));
   };
 
   // Seleção de nodes
