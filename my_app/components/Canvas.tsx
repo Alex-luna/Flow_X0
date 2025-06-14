@@ -37,6 +37,7 @@ const Canvas: React.FC = () => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
   const [selectedNodes, setSelectedNodes] = React.useState<string[]>([]);
+  const [snapToGrid, setSnapToGrid] = React.useState(true);
 
   // Adicionar novo node
   const handleAddNode = useCallback(() => {
@@ -71,19 +72,37 @@ const Canvas: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedNodes, setNodes]);
 
-  // Permitir criar conexões entre nodes
+  // Permitir criar conexões entre nodes, mas impedir conexões inválidas
   const onConnect = useCallback((params: Edge | Connection) => {
-    setEdges((eds) => addEdge({ ...params, ...edgeOptions }, eds));
+    // Impede conexão de um node para ele mesmo
+    if (params.source === params.target) return;
+    // Impede conexões duplicadas
+    setEdges((eds) => {
+      const exists = eds.some(e => e.source === params.source && e.target === params.target);
+      if (exists) return eds;
+      return addEdge({ ...params, ...edgeOptions }, eds);
+    });
   }, []);
 
   return (
     <div className="w-full flex flex-col items-center">
-      <button
-        onClick={handleAddNode}
-        className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-      >
-        Adicionar Bloco
-      </button>
+      <div className="flex items-center gap-4 mb-4">
+        <button
+          onClick={handleAddNode}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+        >
+          Adicionar Bloco
+        </button>
+        <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
+          <input
+            type="checkbox"
+            checked={snapToGrid}
+            onChange={e => setSnapToGrid(e.target.checked)}
+            className="accent-blue-600"
+          />
+          Snap to grid
+        </label>
+      </div>
       <div
         ref={reactFlowWrapper}
         className="w-full h-[70vh] max-h-[800px] min-h-[400px] bg-white dark:bg-neutral-900 rounded-xl shadow border"
@@ -98,6 +117,15 @@ const Canvas: React.FC = () => {
           onSelectionChange={onSelectionChange}
           nodeTypes={nodeTypes}
           fitView
+          panOnScroll
+          panOnDrag={[1, 2]}
+          minZoom={0.5}
+          maxZoom={2}
+          nodeDragThreshold={1}
+          nodeOrigin={[0.5, 0.5]}
+          snapToGrid={snapToGrid}
+          snapGrid={[16, 16]}
+          nodeExtent={[[0, 0], [1000, 1000]]}
         >
           <MiniMap />
           <Controls />
