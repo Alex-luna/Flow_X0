@@ -1,23 +1,29 @@
-import React, { useCallback, useRef } from 'react';
-import ReactFlow, { Background, Controls, MiniMap, Node, Edge, useNodesState, useEdgesState, ReactFlowInstance, addEdge, Connection, EdgeTypes, ReactFlowProps } from 'reactflow';
-import CustomNode from './Node';
+import React, { useCallback, useRef, useState } from 'react';
+import ReactFlow, {
+  Node,
+  Edge,
+  addEdge,
+  useNodesState,
+  useEdgesState,
+  Connection,
+  ReactFlowProvider,
+  Background,
+  Controls,
+  MiniMap,
+  OnConnect,
+  OnNodesChange,
+  OnEdgesChange,
+  ReactFlowInstance,
+} from 'reactflow';
 import 'reactflow/dist/style.css';
 
-let id = 2;
-const getId = () => `${id++}`;
+import CustomNode from './Node';
 
-const initialNodes: Node[] = [
-  {
-    id: '1',
-    type: 'default',
-    data: { label: 'Node de Exemplo' },
-    position: { x: 250, y: 150 },
-  },
-];
+const nodeTypes = {
+  custom: CustomNode,
+};
 
-const initialEdges: Edge[] = [];
-
-// Custom edge style: dashed and animated
+// Animated edge style: dashed and animated
 const animatedEdgeStyle = {
   stroke: '#2563eb',
   strokeWidth: 2,
@@ -29,159 +35,165 @@ const edgeOptions = {
   style: animatedEdgeStyle,
 };
 
-const nodeTypes = { custom: CustomNode };
-
-type BlockType = { type: string; label: string; color: string; icon: string };
-
 interface CanvasProps {
-  onSidebarBlockClick?: (block: BlockType) => void;
-  sidebarClickedBlock?: BlockType | null;
-  onSidebarBlockConsumed?: () => void;
+  onAddNode: (type: string, position?: { x: number; y: number }) => void;
 }
 
-const Canvas: React.FC<CanvasProps> = ({ onSidebarBlockClick, sidebarClickedBlock, onSidebarBlockConsumed }) => {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
-  const [selectedNodes, setSelectedNodes] = React.useState<string[]>([]);
-  const [snapToGrid, setSnapToGrid] = React.useState(true);
+  const [nodes, setNodes, onNodesChange]: [Node[], any, OnNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange]: [Edge[], any, OnEdgesChange] = useEdgesState([]);
+  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
+  const [snapToGrid, setSnapToGrid] = useState(true);
 
-  // Adicionar novo node
-  const handleAddNode = useCallback((block?: BlockType, position?: { x: number; y: number }) => {
-    const nodeData = block
-      ? { label: block.label, color: block.color, icon: block.icon, type: block.type }
-      : { label: `Novo Bloco`, color: '#2563eb' };
-    const newNode: Node = {
-      id: getId(),
-      type: 'custom',
-      data: nodeData,
-      position: position || { x: 100 + Math.random() * 300, y: 100 + Math.random() * 200 },
-    };
-    setNodes((nds) => nds.concat(newNode));
-  }, [setNodes]);
+  const onConnect: OnConnect = useCallback(
+    (params: Connection) => {
+      // Prevent self-connections
+      if (params.source === params.target) return;
+      
+      // Add animated edge
+      setEdges((eds: Edge[]) => {
+        const exists = eds.some(e => e.source === params.source && e.target === params.target);
+        if (exists) return eds;
+        return addEdge({ ...params, ...edgeOptions }, eds);
+      });
+    },
+    [setEdges]
+  );
 
-  // Drop handler para drag-and-drop da sidebar
-  const onDrop: ReactFlowProps['onDrop'] = useCallback((event) => {
-    event.preventDefault();
-    const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
-    const data = event.dataTransfer.getData('application/reactflow');
-    if (!data || !reactFlowInstance.current || !reactFlowBounds) return;
-    const block: BlockType = JSON.parse(data);
-    const position = reactFlowInstance.current.project({
-      x: event.clientX - reactFlowBounds.left,
-      y: event.clientY - reactFlowBounds.top,
-    });
-    handleAddNode(block, position);
-  }, [handleAddNode]);
-
-  // Permitir drop
-  const onDragOver: ReactFlowProps['onDragOver'] = useCallback((event) => {
+  const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
-  // Efeito para click-to-add
-  React.useEffect(() => {
-    if (sidebarClickedBlock) {
-      if (!reactFlowInstance.current || !reactFlowWrapper.current) return;
-      const bounds = reactFlowWrapper.current.getBoundingClientRect();
-      const position = reactFlowInstance.current.project({
-        x: bounds.width / 2,
-        y: bounds.height / 2,
-      });
-      handleAddNode(sidebarClickedBlock, position);
-      onSidebarBlockConsumed && onSidebarBlockConsumed();
-    }
-  }, [sidebarClickedBlock, onSidebarBlockConsumed, handleAddNode]);
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
 
-  // Atualiza dados do node (label/cor)
-  const updateNodeData = (id: string, newData: any) => {
-    setNodes((nds) => nds.map((n) => {
-      if (n.id !== id) return n;
-      if (newData._move) {
-        return { ...n, position: { x: newData._move.x, y: newData._move.y } };
+      if (!reactFlowWrapper.current || !reactFlowInstance) {
+        console.error('ReactFlow wrapper or instance not available');
+        return;
       }
-      return { ...n, data: { ...n.data, ...newData } };
-    }));
-  };
 
-  // Seleção de nodes
-  const onSelectionChange = useCallback((params: { nodes: Node[] }) => {
-    setSelectedNodes(params.nodes.map((n: Node) => n.id));
-  }, []);
+      try {
+        const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+        const dragDataString = event.dataTransfer.getData('application/json');
+        
+        if (!dragDataString) {
+          console.error('No drag data found');
+          return;
+        }
 
-  // Deletar node com tecla Delete
-  React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Delete' && selectedNodes.length > 0) {
-        setNodes((nds) => nds.filter((n) => !selectedNodes.includes(n.id)));
-        setSelectedNodes([]);
+        const dragData = JSON.parse(dragDataString);
+        console.log('Parsed drag data:', dragData);
+
+        const position = reactFlowInstance.project({
+          x: event.clientX - reactFlowBounds.left,
+          y: event.clientY - reactFlowBounds.top,
+        });
+
+        console.log('Drop position:', position);
+
+        // Create new node
+        const newNode: Node = {
+          id: `${dragData.type}-${Date.now()}`,
+          type: 'custom',
+          position,
+          data: {
+            label: dragData.label || dragData.type,
+            type: dragData.type,
+            color: '#6366F1',
+          },
+        };
+
+        console.log('Creating new node:', newNode);
+        setNodes((nds: Node[]) => nds.concat(newNode));
+      } catch (error) {
+        console.error('Error handling drop:', error);
       }
+    },
+    [reactFlowInstance, setNodes]
+  );
+
+  // Handle programmatic node addition (from click)
+  const handleAddNode = useCallback((type: string, position?: { x: number; y: number }) => {
+    const newPosition = position || { x: 250, y: 250 };
+    
+    const newNode: Node = {
+      id: `${type}-${Date.now()}`,
+      type: 'custom',
+      position: newPosition,
+      data: {
+        label: type.charAt(0).toUpperCase() + type.slice(1),
+        type: type,
+        color: '#6366F1',
+      },
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedNodes, setNodes]);
 
-  // Permitir criar conexões entre nodes, mas impedir conexões inválidas
-  const onConnect = useCallback((params: Edge | Connection) => {
-    // Impede conexão de um node para ele mesmo
-    if (params.source === params.target) return;
-    // Impede conexões duplicadas
-    setEdges((eds) => {
-      const exists = eds.some(e => e.source === params.source && e.target === params.target);
-      if (exists) return eds;
-      return addEdge({ ...params, ...edgeOptions }, eds);
-    });
-  }, []);
+    console.log('Adding node programmatically:', newNode);
+    setNodes((nds: Node[]) => nds.concat(newNode));
+  }, [setNodes]);
+
+  // Pass the handler to parent
+  React.useEffect(() => {
+    if (onAddNode) {
+      // Replace the parent's onAddNode with our handler
+      (onAddNode as any).current = handleAddNode;
+    }
+  }, [handleAddNode, onAddNode]);
 
   return (
-    <div className="w-full flex flex-col items-center">
-      <div className="flex items-center gap-4 mb-4">
-        <button
-          onClick={() => handleAddNode()}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-        >
-          Adicionar Bloco
-        </button>
-        <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
-          <input
-            type="checkbox"
-            checked={snapToGrid}
-            onChange={e => setSnapToGrid(e.target.checked)}
-            className="accent-blue-600"
-          />
-          Snap to grid
-        </label>
+    <div className="w-full h-full flex flex-col">
+      {/* Controls Bar */}
+      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => handleAddNode('generic')}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm font-medium"
+          >
+            Add Node
+          </button>
+          
+          <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
+            <input
+              type="checkbox"
+              checked={snapToGrid}
+              onChange={e => setSnapToGrid(e.target.checked)}
+              className="accent-blue-600"
+            />
+            Snap to Grid
+          </label>
+        </div>
+        
+        <div className="text-sm text-gray-500">
+          Drag from sidebar or click to add nodes
+        </div>
       </div>
-      <div
-        ref={reactFlowWrapper}
-        className="w-full h-[70vh] max-h-[800px] min-h-[400px] bg-white dark:bg-neutral-900 rounded-xl shadow border"
-      >
+
+      {/* Canvas */}
+      <div className="flex-1" ref={reactFlowWrapper}>
         <ReactFlow
-          nodes={nodes.map((n) => n.type === 'custom' ? { ...n, data: { ...n.data, dataUpdater: updateNodeData } } : n)}
+          nodes={nodes}
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
-          onInit={(instance) => (reactFlowInstance.current = instance)}
-          onSelectionChange={onSelectionChange}
+          onInit={setReactFlowInstance}
+          onDrop={onDrop}
+          onDragOver={onDragOver}
           nodeTypes={nodeTypes}
           fitView
+          snapToGrid={snapToGrid}
+          snapGrid={[16, 16]}
+          attributionPosition="top-right"
           panOnScroll
           panOnDrag={[1, 2]}
           minZoom={0.5}
           maxZoom={2}
-          nodeDragThreshold={1}
-          nodeOrigin={[0.5, 0.5]}
-          snapToGrid={snapToGrid}
-          snapGrid={[16, 16]}
-          nodeExtent={[[0, 0], [1000, 1000]]}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
+          nodeExtent={[[-1000, -1000], [2000, 2000]]}
         >
-          <MiniMap />
           <Controls />
+          <MiniMap />
           <Background gap={16} />
         </ReactFlow>
       </div>
@@ -189,4 +201,10 @@ const Canvas: React.FC<CanvasProps> = ({ onSidebarBlockClick, sidebarClickedBloc
   );
 };
 
-export default Canvas; 
+const CanvasWithProvider: React.FC<CanvasProps> = (props) => (
+  <ReactFlowProvider>
+    <Canvas {...props} />
+  </ReactFlowProvider>
+);
+
+export default CanvasWithProvider; 
