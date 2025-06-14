@@ -1,0 +1,229 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# **Effective Logging Principles**  
+
+## **1. Core Philosophy**  
+- **Logs must be:**  
+  - **Actionable** → Help debug or respond to issues.  
+  - **Structured** → Easy to parse (by humans & AI).  
+  - **Minimal** → No noise, only what’s needed.  
+  - **Traceable** → Include context (user, session, request ID).  
+
+- **Avoid:**  
+  - `console.log("Here")` (no context).  
+  - Repetitive or noisy logs (e.g., logging every minor step).  
+  - Unformatted objects (`console.log(user)` → hard to read).  
+
+---
+
+## **2. Log Levels (Prioritized)**  
+| Level       | When to Use                          | Example Output |  
+|-------------|--------------------------------------|----------------|  
+| **ERROR**   | Critical failures (user-impacting).  | `[ERROR] Payment failed | User:123 | Error: "Insufficient funds"` |  
+| **WARN**    | Unexpected but recoverable issues.   | `[WARN] API rate limit near | Retry in 5s` |  
+| **INFO**    | Key system events (startup, shutdown). | `[INFO] Server started on port 3000` |  
+| **DEBUG**   | Detailed troubleshooting (dev-only). | `[DEBUG] DB Query: SELECT * FROM users WHERE id=42` |  
+
+✅ **Rule:**  
+- **Production:** Only `ERROR`, `WARN`, `INFO`.  
+- **Development:** Add `DEBUG` if needed.  
+
+---
+
+## **3. Log Formatting (Structured & Readable)**  
+
+### **Good Examples:**  
+```javascript
+// ✅ Structured, clear, and actionable  
+console.error(`[ERROR] Auth failed | User:${userId} | Reason: Invalid token`);  
+
+// ✅ With timestamp (helpful for tracing)  
+console.warn(`[WARN] [${new Date().toISOString()}] Cache miss | Key:${cacheKey}`);  
+
+// ✅ Debug with JSON formatting (AI-friendly)  
+console.debug(`[DEBUG] API Request:`, {  
+  endpoint: "/payments",  
+  status: 500,  
+  error: "Timeout after 3s"  
+});  
+Bad Examples:
+javascript
+// ❌ No context  
+console.log("Error!");  
+
+// ❌ Unformatted dump  
+console.log(userObject);  
+
+// ❌ Debug spam  
+console.log("Rendering component...");  
+4. Context is Key
+Every log should answer:
+
+What happened? ("Payment failed")
+
+Why? ("Error: Card declined")
+
+Who was affected? (User:123)
+
+When? (Timestamp or request ID)
+
+✅ Best Practice:
+
+javascript
+function processOrder(order) {  
+  try {  
+    // ...  
+  } catch (error) {  
+    console.error(`[ERROR] Order failed | OrderID:${order.id} | User:${order.userId} | ${error.message}`);  
+  }  
+}  
+5. AI & Automation-Friendly Logs
+Use JSON for machine parsing:
+
+javascript
+console.log(JSON.stringify({  
+  level: "ERROR",  
+  timestamp: new Date().toISOString(),  
+  message: "Database connection failed",  
+  context: { db: "primary", retries: 3 }  
+}));  
+Tag important logs for monitoring:
+
+javascript
+// Example: Tag for Sentry/LogRocket  
+console.error(`[ERROR] [MONITOR] Checkout failed | ${error.stack}`);  
+6. Framework-Specific Tips
+Frontend (JavaScript/TypeScript)
+Use loglevel or pino for better control.
+
+Avoid console.log in production (use console.error for critical issues).
+
+Backend (Node.js/Python)
+Node.js: Use winston or pino.
+
+Python: Use structlog or logging module.
+
+Magic UI/Shadcn UI
+Log UI state changes only if they cause errors:
+
+javascript
+if (formError) {  
+  console.error(`[ERROR] Form submission failed | Field:${error.field}`);  
+
+}
+
+7. Logging Checklist
+✅ Is this log necessary?
+✅ Does it include context?
+✅ Is the level appropriate (ERROR/WARN/INFO/DEBUG)?
+✅ Can an engineer (or AI) act on it?
+
+
+
+
+---
+
+# **Secure Logging Principles**  
+
+## **1. Core Security Rules**  
+✅ **Never log:**  
+- **Passwords, API keys, tokens** (`Bearer xxx`, `secret=abc123`)  
+- **Full credit card numbers** (log only last 4 digits: `4111...1234`)  
+- **Personal Data (PII)** (emails, phone numbers, IDs – mask them)  
+- **Full request/response bodies** (log only what’s necessary)  
+
+🚨 **Dangerous Examples:**  
+```javascript
+// ❌ NEVER DO THIS  
+console.log(`User logged in: ${email} Password: ${password}`);  
+console.log(`API Key: ${apiKey}`);  
+console.log(`Credit Card: ${cardNumber}`);  
+✅ Safe Alternatives:
+
+javascript
+// ✅ Mask sensitive data  
+console.log(`User login attempt: ${maskEmail(email)}`); // "u***@domain.com"  
+console.log(`Payment card: ${cardNumber.slice(-4)}`); // "****1234"  
+console.log(`API request to /payments`); // No keys in logs  
+2. Production vs. Development Logging
+Environment	Allowed Logs	Security Checks
+Development	DEBUG, INFO, WARN, ERROR	Mask test data only
+Staging	INFO, WARN, ERROR	Full masking
+Production	ERROR, WARN (limited INFO)	No sensitive data ever
+🔐 Production Rules:
+
+No debug logs (potential info leaks).
+
+No stack traces (unless sanitized).
+
+No full error messages (log codes instead).
+
+javascript
+// ❌ UNSAFE (Production)  
+console.error(`DB Error: ${err.stack}`);  
+
+// ✅ SAFE (Production)  
+console.error(`[DB-1003] Connection failed | See internal logs`);  
+3. Data Masking Techniques
+1. Email Masking
+javascript
+function maskEmail(email) {  
+  const [user, domain] = email.split('@');  
+  return `${user[0]}***@${domain}`;  
+}  
+// "user@domain.com" → "u***@domain.com"  
+2. Token/Key Redaction
+javascript
+function redactKey(key) {  
+  return `***${key.slice(-4)}`;  
+}  
+// "sk_live_abc123" → "***c123"  
+3. Credit Card Handling
+javascript
+// Only log last 4 digits + bin if needed  
+console.log(`Card: ${cardNumber.replace(/.(?=.{4})/g, '*')}`);  
+// "4111222233334444" → "************4444"  
+4. Secure Logging Libraries
+Language	Library	Security Feature
+JavaScript	Pino	Built-in redaction
+Python	Structlog	Custom processors
+Node.js	Winston	Filters sensitive data
+✅ Example (Pino - Safe Logging):
+
+javascript
+const pino = require('pino');  
+
+const logger = pino({  
+  redact: ['password', 'token', 'user.email'],  
+});  
+
+logger.info({ user }); // Automatically redacts sensitive fields  
+5. Log Storage & Access Control
+🔐 Even safe logs need protection:
+
+Encrypt log files (at rest & in transit).
+
+Restrict access (only DevOps/Security teams).
+
+Rotate logs (auto-delete old logs).
+
+⚠️ Never expose logs in:
+
+Client-side JavaScript (console.log in production frontend).
+
+Public error pages (like 500 errors with stack traces).
+
+6. Security Checklist
+
+✅ Before deploying:
+
+Search for console.log (remove or sanitize).
+
+Test logs (do they leak PII/tokens?).
+
+Enable redaction (use libraries if possible).
+
+Review error messages (generic > detailed in prod).
