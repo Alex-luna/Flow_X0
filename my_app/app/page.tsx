@@ -1,4 +1,4 @@
-import CanvasClient from "../components/CanvasClient";
+import MainAppClient from "./MainAppClient";
 
 export default function Home() {
   return (
@@ -10,11 +10,7 @@ export default function Home() {
           </text>
         </svg>
       </header>
-      <main className="flex flex-col items-center w-full flex-1">
-        <div className="w-full max-w-7xl px-4">
-          <CanvasClient />
-        </div>
-      </main>
+      <MainAppClient />
       <footer className="flex gap-[24px] flex-wrap items-center justify-center py-4">
         {/* Footer links removidos para simplificação */}
       </footer>

@@ -1,6 +1,12 @@
 "use client";
-import Canvas from "./Canvas";
+import dynamic from "next/dynamic";
+import React from "react";
 
-export default function CanvasClient() {
-  return <Canvas />;
+const Canvas = dynamic(() => import("./Canvas"), { ssr: false });
+
+export default function CanvasClient({ sidebarClickedBlock, onSidebarBlockConsumed }: {
+  sidebarClickedBlock?: any;
+  onSidebarBlockConsumed?: () => void;
+}) {
+  return <Canvas sidebarClickedBlock={sidebarClickedBlock} onSidebarBlockConsumed={onSidebarBlockConsumed} />;
 } 

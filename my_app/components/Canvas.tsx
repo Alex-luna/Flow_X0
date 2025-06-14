@@ -1,5 +1,5 @@
 import React, { useCallback, useRef } from 'react';
-import ReactFlow, { Background, Controls, MiniMap, Node, Edge, useNodesState, useEdgesState, ReactFlowInstance, addEdge, Connection, EdgeTypes } from 'reactflow';
+import ReactFlow, { Background, Controls, MiniMap, Node, Edge, useNodesState, useEdgesState, ReactFlowInstance, addEdge, Connection, EdgeTypes, ReactFlowProps } from 'reactflow';
 import CustomNode from './Node';
 import 'reactflow/dist/style.css';
 
@@ -31,7 +31,15 @@ const edgeOptions = {
 
 const nodeTypes = { custom: CustomNode };
 
-const Canvas: React.FC = () => {
+type BlockType = { type: string; label: string; color: string; icon: string };
+
+interface CanvasProps {
+  onSidebarBlockClick?: (block: BlockType) => void;
+  sidebarClickedBlock?: BlockType | null;
+  onSidebarBlockConsumed?: () => void;
+}
+
+const Canvas: React.FC<CanvasProps> = ({ onSidebarBlockClick, sidebarClickedBlock, onSidebarBlockConsumed }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -40,15 +48,52 @@ const Canvas: React.FC = () => {
   const [snapToGrid, setSnapToGrid] = React.useState(true);
 
   // Adicionar novo node
-  const handleAddNode = useCallback(() => {
+  const handleAddNode = useCallback((block?: BlockType, position?: { x: number; y: number }) => {
+    const nodeData = block
+      ? { label: block.label, color: block.color, icon: block.icon, type: block.type }
+      : { label: `Novo Bloco`, color: '#2563eb' };
     const newNode: Node = {
       id: getId(),
       type: 'custom',
-      data: { label: `Novo Bloco`, color: '#2563eb' },
-      position: { x: 100 + Math.random() * 300, y: 100 + Math.random() * 200 },
+      data: nodeData,
+      position: position || { x: 100 + Math.random() * 300, y: 100 + Math.random() * 200 },
     };
     setNodes((nds) => nds.concat(newNode));
   }, [setNodes]);
+
+  // Drop handler para drag-and-drop da sidebar
+  const onDrop: ReactFlowProps['onDrop'] = useCallback((event) => {
+    event.preventDefault();
+    const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
+    const data = event.dataTransfer.getData('application/reactflow');
+    if (!data || !reactFlowInstance.current || !reactFlowBounds) return;
+    const block: BlockType = JSON.parse(data);
+    const position = reactFlowInstance.current.project({
+      x: event.clientX - reactFlowBounds.left,
+      y: event.clientY - reactFlowBounds.top,
+    });
+    handleAddNode(block, position);
+  }, [handleAddNode]);
+
+  // Permitir drop
+  const onDragOver: ReactFlowProps['onDragOver'] = useCallback((event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  // Efeito para click-to-add
+  React.useEffect(() => {
+    if (sidebarClickedBlock) {
+      if (!reactFlowInstance.current || !reactFlowWrapper.current) return;
+      const bounds = reactFlowWrapper.current.getBoundingClientRect();
+      const position = reactFlowInstance.current.project({
+        x: bounds.width / 2,
+        y: bounds.height / 2,
+      });
+      handleAddNode(sidebarClickedBlock, position);
+      onSidebarBlockConsumed && onSidebarBlockConsumed();
+    }
+  }, [sidebarClickedBlock, onSidebarBlockConsumed, handleAddNode]);
 
   // Atualiza dados do node (label/cor)
   const updateNodeData = (id: string, newData: any) => {
@@ -94,7 +139,7 @@ const Canvas: React.FC = () => {
     <div className="w-full flex flex-col items-center">
       <div className="flex items-center gap-4 mb-4">
         <button
-          onClick={handleAddNode}
+          onClick={() => handleAddNode()}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
         >
           Adicionar Bloco
@@ -132,6 +177,8 @@ const Canvas: React.FC = () => {
           snapToGrid={snapToGrid}
           snapGrid={[16, 16]}
           nodeExtent={[[0, 0], [1000, 1000]]}
+          onDrop={onDrop}
+          onDragOver={onDragOver}
         >
           <MiniMap />
           <Controls />
