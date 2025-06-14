@@ -121,34 +121,37 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, so
         
         {/* Main node container */}
         <div 
-          className={`relative w-[105px] h-[135px] bg-white border-2 rounded-lg shadow-sm transition-all duration-200 ${
+          className={`relative w-[105px] h-[135px] overflow-hidden transition-all duration-200 ${
             selected 
-              ? 'border-blue-500 shadow-lg ring-2 ring-blue-200' 
-              : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+              ? 'ring-2 ring-blue-500 ring-offset-2' 
+              : ''
           }`}
           onDoubleClick={() => setEditing(true)}
           onKeyDown={handleKeyDown}
         >
-          {/* Icon container with proper z-index */}
-          <div className="absolute inset-0 flex items-center justify-center z-10">
-            <div className="relative w-16 h-20">
-              {/* Base screen icon */}
-              <div className="absolute inset-0 z-10">
-                <ScreenIcon className="w-full h-full" />
-              </div>
-              
-              {/* Overlay icon */}
-              {overlayIcon && (
-                <div className="absolute inset-0 z-20 flex items-center justify-center">
-                  <div className="w-8 h-8 flex items-center justify-center">
-                    {React.createElement(overlayIcon, { className: "w-full h-full" })}
-                  </div>
+          {/* SVG fills entire container - no spacing */}
+          <div className="absolute inset-0 w-full h-full">
+            {/* Base screen icon - scaled to exact container size */}
+            <ScreenIcon 
+              className="w-full h-full" 
+              style={{ 
+                width: '105px', 
+                height: '135px',
+                display: 'block'
+              }} 
+            />
+            
+            {/* Overlay icon - positioned within the screen content area */}
+            {overlayIcon && (
+              <div className="absolute inset-0 flex items-center justify-center" style={{ top: '20px', bottom: '20px' }}>
+                <div className="w-8 h-8 flex items-center justify-center">
+                  {React.createElement(overlayIcon, { className: "w-full h-full" })}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
-          {/* Label container positioned below icon */}
+          {/* Label container - positioned outside the SVG */}
           <div className="absolute -bottom-6 left-0 right-0">
             {editing ? (
               <input
@@ -167,16 +170,18 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, so
             )}
           </div>
 
-          {/* Connection handles */}
+          {/* Connection handles - positioned on the SVG edges */}
           <Handle
             type="target"
             position={Position.Top}
             className="w-3 h-3 bg-blue-500 border-2 border-white"
+            style={{ top: '-6px' }}
           />
           <Handle
             type="source"
             position={Position.Bottom}
             className="w-3 h-3 bg-blue-500 border-2 border-white"
+            style={{ bottom: '-6px' }}
           />
         </div>
       </div>
