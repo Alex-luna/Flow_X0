@@ -1,0 +1,35 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Vou te descrever uma ideia de app/webapp/sistema.
+
+Seu papel é:
+1. Entender a ideia de forma clara.
+2. Listar os componentes principais da aplicação.
+3. Sugerir a **ordem de criação** com base em prioridade (do essencial ao refinamento).
+4. Definir as **tecnologias recomendadas** para cada parte do projeto.
+5. Aplicar as melhores práticas de UI/UX com base no `@perfect_UI_UX.mdc` (referência obrigatória).
+6. Criar **um briefing final**, conciso e direto, legível por humanos e inteligível por IA.
+
+---
+
+### 🧪 Foco
+- **MVP simples, funcional, bonito e escalável**
+- Interface com **microanimações**, responsiva, com **feedback visual claro**
+- Inicialmente: **sem back-end ou banco de dados**. Tudo rodando **local e via navegador**.
+- Comece pela **UI apenas** (ex: com Shadcn UI, Tailwind ou Magic UI) — **a lógica e persistência virão depois**.
+
+---
+
+### 🎯 Output esperado
+- Estrutura geral do projeto (componentes, páginas, estados)
+- Tecnologias recomendadas
+- Etapas de desenvolvimento (ordem de prioridade)
+- Regras visuais e comportamentais de UI/UX
+- Prompt final que pode ser reutilizado por outro agente
+
+---
+
+Seja claro, prático e objetivo. Priorize qualidade visual, leveza de código e clareza de comportamento.

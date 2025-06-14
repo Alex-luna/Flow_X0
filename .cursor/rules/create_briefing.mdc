@@ -1,0 +1,62 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+A seguir, vou descrever uma ideia de aplicação.
+
+Seu papel é atuar como **especialista em design de produto e desenvolvimento de software**, e gerar um **briefing completo**, com foco em:
+
+- Entender o propósito da ideia
+- Organizar as prioridades de implementação
+- Sugerir tecnologias viáveis
+- Aplicar as melhores práticas visuais e de experiência usando o `@perfect_UI_UX.mdc`
+- Gerar um output que sirva tanto para humanos quanto para outros agentes de IA, com foco em um **MVP simples, bonito e escalável**
+
+---
+
+## Etapas da sua resposta
+
+1. **Resumo da ideia** com linguagem clara e objetiva
+2. **Análise das prioridades** de desenvolvimento (o que vem primeiro, o que pode esperar)
+3. **Recomendações de tecnologias** (UI, estrutura, linguagens, frameworks)
+4. **Aplicação do padrão @perfect_UI_UX.mdc** — práticas essenciais de UI/UX que devem ser seguidas
+5. **Briefing final** que responda às perguntas abaixo 👇
+
+---
+
+## ❓Perguntas de Esclarecimento (responda baseado no que for fornecido)
+
+1. **Problema/Objetivo:** Qual é o principal problema que essa ferramenta resolve para o usuário?
+2. **Usuário-alvo:** Quem vai usar isso na prática?
+3. **Funcionalidades-chave:** Quais funcionalidades são indispensáveis no MVP?
+4. **User Stories:** Liste de 2 a 3 histórias de usuário com o formato:
+   > Como [tipo de usuário], quero [ação], para [benefício].
+5. **Critérios de Aceite:** Como saberemos que o MVP está pronto e funcional?
+6. **Fora de Escopo:** O que **não** deve ser incluído no MVP?
+7. **Dados manipuláveis:** Que tipo de dados o usuário irá editar ou interagir?
+8. **Design/UI:** Há alguma referência obrigatória (cor, tipografia, estilo)?
+9. **Edge Cases:** Algum cenário-limite ou erro que precisa ser tratado desde o início?
+
+---
+
+## 📦 Requisitos Técnicos do MVP
+
+- Rodar **localmente e via navegador**
+- Não se preocupe com back-end ou banco de dados neste momento
+- Desenvolva **apenas a interface (UI)** com microanimações, responsiva e leve
+- Utilize **Shadcn UI** ou **Tailwind**, e siga boas práticas de componentização
+- Interface deve ser **simples, clara e com alta usabilidade**
+- Produza um código **modular e escalável**
+
+---
+
+## Sobre o output
+
+Caso já exista um documento na pasta /docs chamado "briefing.md", mude o nome dele para "briefing_bckp.md". Crie um arquivo chamado  "briefing.md" no mesmo diretório /docs e salve seu output nesse novo arquivo. Caso não haja um arquivo previamente criado, crie um "briefing.md" e siga as mesmas regras.
+
+---
+
+Gere a resposta de forma objetiva, priorizando clareza e execução. Ao final, inclua um prompt reutilizável para que outro agente consiga continuar o trabalho com base no que foi criado.
+
+
