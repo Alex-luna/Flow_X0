@@ -1,5 +1,6 @@
 import React, { useCallback, useRef } from 'react';
 import ReactFlow, { Background, Controls, MiniMap, Node, Edge, useNodesState, useEdgesState, ReactFlowInstance, addEdge, Connection, EdgeTypes } from 'reactflow';
+import CustomNode from './Node';
 import 'reactflow/dist/style.css';
 
 let id = 2;
@@ -28,6 +29,8 @@ const edgeOptions = {
   style: animatedEdgeStyle,
 };
 
+const nodeTypes = { custom: CustomNode };
+
 const Canvas: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -39,12 +42,17 @@ const Canvas: React.FC = () => {
   const handleAddNode = useCallback(() => {
     const newNode: Node = {
       id: getId(),
-      type: 'default',
-      data: { label: `Novo Bloco` },
+      type: 'custom',
+      data: { label: `Novo Bloco`, color: '#2563eb' },
       position: { x: 100 + Math.random() * 300, y: 100 + Math.random() * 200 },
     };
     setNodes((nds) => nds.concat(newNode));
   }, [setNodes]);
+
+  // Atualiza dados do node (label/cor)
+  const updateNodeData = (id: string, newData: any) => {
+    setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, ...newData } } : n));
+  };
 
   // Seleção de nodes
   const onSelectionChange = useCallback((params: { nodes: Node[] }) => {
@@ -81,13 +89,14 @@ const Canvas: React.FC = () => {
         className="w-full h-[70vh] max-h-[800px] min-h-[400px] bg-white dark:bg-neutral-900 rounded-xl shadow border"
       >
         <ReactFlow
-          nodes={nodes}
+          nodes={nodes.map((n) => n.type === 'custom' ? { ...n, data: { ...n.data, dataUpdater: updateNodeData } } : n)}
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onInit={(instance) => (reactFlowInstance.current = instance)}
           onSelectionChange={onSelectionChange}
+          nodeTypes={nodeTypes}
           fitView
         >
           <MiniMap />
