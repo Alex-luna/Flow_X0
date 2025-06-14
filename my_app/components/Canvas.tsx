@@ -1,5 +1,5 @@
 import React, { useCallback, useRef } from 'react';
-import ReactFlow, { Background, Controls, MiniMap, Node, Edge, useNodesState, useEdgesState, ReactFlowInstance } from 'reactflow';
+import ReactFlow, { Background, Controls, MiniMap, Node, Edge, useNodesState, useEdgesState, ReactFlowInstance, addEdge, Connection, EdgeTypes } from 'reactflow';
 import 'reactflow/dist/style.css';
 
 let id = 2;
@@ -15,6 +15,18 @@ const initialNodes: Node[] = [
 ];
 
 const initialEdges: Edge[] = [];
+
+// Custom edge style: dashed and animated
+const animatedEdgeStyle = {
+  stroke: '#2563eb',
+  strokeWidth: 2,
+  strokeDasharray: '6 4',
+};
+
+const edgeOptions = {
+  animated: true,
+  style: animatedEdgeStyle,
+};
 
 const Canvas: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -51,6 +63,11 @@ const Canvas: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedNodes, setNodes]);
 
+  // Permitir criar conexões entre nodes
+  const onConnect = useCallback((params: Edge | Connection) => {
+    setEdges((eds) => addEdge({ ...params, ...edgeOptions }, eds));
+  }, []);
+
   return (
     <div className="w-full flex flex-col items-center">
       <button
@@ -68,6 +85,7 @@ const Canvas: React.FC = () => {
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
           onInit={(instance) => (reactFlowInstance.current = instance)}
           onSelectionChange={onSelectionChange}
           fitView
