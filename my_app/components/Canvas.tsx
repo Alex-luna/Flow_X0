@@ -33,6 +33,8 @@ const animatedEdgeStyle = {
 const edgeOptions = {
   animated: true,
   style: animatedEdgeStyle,
+  focusable: true,
+  deletable: true,
 };
 
 interface CanvasProps {
@@ -45,6 +47,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
   const [edges, setEdges, onEdgesChange]: [Edge[], any, OnEdgesChange] = useEdgesState([]);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [snapToGrid, setSnapToGrid] = useState(true);
+  const [selectedEdges, setSelectedEdges] = useState<string[]>([]);
 
   const onConnect: OnConnect = useCallback(
     (params: Connection) => {
@@ -59,6 +62,28 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
       });
     },
     [setEdges]
+  );
+
+  // Handle edge click - select edge for deletion
+  const onEdgeClick = useCallback(
+    (event: React.MouseEvent, edge: Edge) => {
+      event.stopPropagation();
+      console.log('🎯 Selecting edge:', edge.id);
+      setSelectedEdges([edge.id]);
+    },
+    [setSelectedEdges]
+  );
+
+  // Handle keyboard deletion for selected edges
+  const onKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedEdges.length > 0) {
+        console.log('🗑️ Deleting selected edges:', selectedEdges);
+        setEdges((eds: Edge[]) => eds.filter(e => !selectedEdges.includes(e.id)));
+        setSelectedEdges([]);
+      }
+    },
+    [selectedEdges, setEdges, setSelectedEdges]
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -206,6 +231,12 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     };
   }, []);
 
+  // Add keyboard listener
+  React.useEffect(() => {
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [onKeyDown]);
+
   return (
     <div className="w-full h-full flex flex-col">
       {/* Controls Bar */}
@@ -277,6 +308,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           deleteKeyCode={['Delete', 'Backspace']}
           onlyRenderVisibleElements={false}
           preventScrolling={false}
+          onEdgeClick={onEdgeClick}
         >
           <Controls />
           <MiniMap />

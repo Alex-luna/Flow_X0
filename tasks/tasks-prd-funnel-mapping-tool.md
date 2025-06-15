@@ -131,17 +131,22 @@
     - [x] 2.8.1 Restore connection handles visibility and functionality
     - [x] 2.8.2 Fix node labels disappearing on canvas
     - [x] 2.8.3 Fix drag & drop functionality from sidebar to canvas
-  - [ ] 2.9 Enhance Inner SVG Content (PRIORITY 2)
-    - [ ] 2.9.1 Increase overlay icon size by 4x within screen boundaries
-    - [ ] 2.9.2 Ensure proper spacing and visual balance
-    - [ ] 2.9.3 Maintain responsive scaling
-  - [ ] 2.10 Implement Node Properties Panel (PRIORITY 3)
-    - [ ] 2.10.1 Create right sidebar panel component
-    - [ ] 2.10.2 Add node selection state management
-    - [ ] 2.10.3 Implement name editing functionality
-    - [ ] 2.10.4 Add color picker for node customization
-    - [ ] 2.10.5 Add connector direction toggle (horizontal/vertical)
-    - [ ] 2.10.6 Integrate panel with node selection events
+  - [x] 2.9 Enhance Inner SVG Content (PRIORITY 2)
+    - [x] 2.9.1 Increase overlay icon size by 4x within screen boundaries
+    - [x] 2.9.2 Ensure proper spacing and visual balance
+    - [x] 2.9.3 Maintain responsive scaling
+  - [x] 2.10 Implement Edge Deletion Functionality (PRIORITY 2)
+    - [x] 2.10.1 Add click-to-delete edges functionality
+    - [x] 2.10.2 Add keyboard shortcut for edge deletion (Delete/Backspace)
+    - [ ] 2.10.3 Add visual feedback for edge selection/hover
+    - [ ] 2.10.4 Implement edge context menu with delete option
+  - [ ] 2.11 Implement Node Properties Panel (PRIORITY 3)
+    - [ ] 2.11.1 Create right sidebar panel component
+    - [ ] 2.11.2 Add node selection state management
+    - [ ] 2.11.3 Implement name editing functionality
+    - [ ] 2.11.4 Add color picker for node customization
+    - [ ] 2.11.5 Add connector direction toggle (horizontal/vertical)
+    - [ ] 2.11.6 Integrate panel with node selection events
 
 - [ ] 3.0 Add Mini Map for Canvas Navigation
   - [ ] 3.1 Implement a mini map component synchronized with the main canvas

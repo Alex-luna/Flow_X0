@@ -112,6 +112,11 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, xP
 
   // Renderização para funnel steps
   if (isFunnelStep) {
+    // Calculate responsive icon size (15% of container width)
+    const iconSizeClass = 'w-16 h-16'; // Default size for 105px container
+    const topSpacing = '30px'; // 30/135 = ~22% from top
+    const bottomSpacing = '40px'; // 40/135 = ~30% from bottom
+
     return (
       <div className="relative">
         {/* SVG positioned behind everything */}
@@ -128,8 +133,8 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, xP
           
           {/* Overlay icon - positioned within the screen content area */}
           {overlayIcon && (
-            <div className="absolute inset-0 flex items-center justify-center" style={{ top: '20px', bottom: '20px' }}>
-              <div className="w-8 h-8 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center" style={{ top: '25px', bottom: '35px' }}>
+              <div className="w-20 h-20 flex items-center justify-center">
                 {React.createElement(overlayIcon, { className: "w-full h-full" })}
               </div>
             </div>

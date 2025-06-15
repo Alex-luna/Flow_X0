@@ -140,7 +140,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onAddNode }) => {
             tabIndex={0}
             aria-label={`Add ${item.label} node`}
           >
-            <div className="flex items-center justify-center w-8 h-8 mb-2">
+            <div className="flex items-center justify-center w-10 h-10 mb-2">
               <IconComponent className="w-full h-full" />
             </div>
             <span className="text-xs font-medium text-gray-700 text-center leading-tight">

@@ -37,15 +37,15 @@ export default function ComposedBlockIcon({ base, overlay, size = 50 }: Composed
         className="absolute"
         style={{
           position: 'absolute',
-          top: '30%',
+          top: '38%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: size * 0.3,
-          height: size * 0.3,
+          width: size * 0.7,
+          height: size * 0.7,
           zIndex: 2
         }}
       >
-        <div style={{ width: size * 0.3, height: size * 0.3 }}>
+        <div style={{ width: size * 0.7, height: size * 0.7 }}>
           {overlay}
         </div>
       </div>
