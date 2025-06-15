@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import ExportMenu from './ExportMenu';
+import ShareModal from './ShareModal';
 
 interface Project {
   id: string;
@@ -39,6 +41,8 @@ const Header: React.FC<HeaderProps> = ({ currentProject, onProjectChange }) => {
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const currentProjectData = currentProject || mockProjects[0];
   const currentFolderData = mockFolders.find(f => f.id === currentProjectData.folder);
@@ -52,6 +56,65 @@ const Header: React.FC<HeaderProps> = ({ currentProject, onProjectChange }) => {
     if (onProjectChange) {
       onProjectChange(project);
     }
+  };
+
+  const handleExport = async (format: 'pdf' | 'png' | 'jpg' | 'json') => {
+    console.log(`🚀 Starting export as ${format.toUpperCase()}`);
+    
+    // Mock export functionality
+    switch (format) {
+      case 'pdf':
+        console.log('📄 Exporting to PDF...');
+        break;
+      case 'png':
+        console.log('🖼️ Exporting to PNG...');
+        break;
+      case 'jpg':
+        console.log('📸 Exporting to JPG...');
+        break;
+      case 'json':
+        console.log('📊 Exporting flow data to JSON...');
+        // Mock n8n-compatible export
+        const mockFlowData = {
+          name: currentProjectData.name,
+          nodes: [],
+          connections: {},
+          version: '1.0',
+          createdAt: new Date().toISOString(),
+        };
+        const blob = new Blob([JSON.stringify(mockFlowData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentProjectData.name.replace(/\s+/g, '_')}_flow.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        break;
+    }
+  };
+
+  const handleImport = (file: File) => {
+    console.log('📁 Importing file:', file.name);
+    
+    if (file.type === 'application/json') {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const flowData = JSON.parse(e.target?.result as string);
+          console.log('✅ Successfully parsed flow data:', flowData);
+          // Mock import functionality
+          alert(`Successfully imported flow: ${flowData.name || 'Unnamed Flow'}`);
+        } catch (error) {
+          console.error('❌ Failed to parse JSON:', error);
+          alert('Error: Invalid JSON file format');
+        }
+      };
+      reader.readAsText(file);
+    } else {
+      alert('Error: Please select a JSON file');
+    }
+    
+    setShowExportMenu(false);
   };
 
   const getStatusColor = (status: Project['status']) => {
@@ -183,11 +246,17 @@ const Header: React.FC<HeaderProps> = ({ currentProject, onProjectChange }) => {
           {currentProjectData.status === 'active' ? 'Auto-saved' : 'Draft'}
         </div>
 
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+        <button 
+          onClick={() => setShowShareModal(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+        >
           Share
         </button>
 
-        <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
+        <button 
+          onClick={() => setShowExportMenu(true)}
+          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+        >
           Export
         </button>
       </div>
@@ -246,6 +315,21 @@ const Header: React.FC<HeaderProps> = ({ currentProject, onProjectChange }) => {
           </div>
         </div>
       )}
+
+      {/* Export Menu */}
+      <ExportMenu
+        isOpen={showExportMenu}
+        onClose={() => setShowExportMenu(false)}
+        onExport={handleExport}
+        onImport={handleImport}
+      />
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        projectName={currentProjectData.name}
+      />
     </div>
   );
 };

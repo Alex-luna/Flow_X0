@@ -25,7 +25,7 @@
 - [x] 2.0 Build Sidebar with Draggable/Clickable Blocks
 - [x] 3.0 Add Mini Map for Canvas Navigation
 - [x] 4.0 Create Header with Project/Folder Mock Management
-- [ ] 5.0 Implement Export, Import, and Share Functionality
+- [x] 5.0 Implement Export, Import, and Share Functionality
 - [ ] 6.0 Implement Data Persistency (Local Storage)
 
 ---
@@ -159,12 +159,12 @@
   - [x] 4.2 Add mock project/folder creation, selection, and deletion (UI only)
   - [x] 4.3 Display current project/folder name and status
 
-- [ ] 5.0 Implement Export, Import, and Share Functionality
-  - [ ] 5.1 Implement export of canvas as PDF, PNG, and JPG
-  - [ ] 5.2 Implement export of flow as JSON (n8n-compatible schema)
-  - [ ] 5.3 Implement import of flow from JSON (n8n-compatible schema)
-  - [ ] 5.4 Implement share modal for mock URL sharing
-  - [ ] 5.5 Handle export/import errors and edge cases (empty canvas, invalid JSON)
+- [x] 5.0 Implement Export, Import, and Share Functionality
+  - [x] 5.1 Implement export of canvas as PDF, PNG, and JPG
+  - [x] 5.2 Implement export of flow as JSON (n8n-compatible schema)
+  - [x] 5.3 Implement import of flow from JSON (n8n-compatible schema)
+  - [x] 5.4 Implement share modal for mock URL sharing
+  - [x] 5.5 Handle export/import errors and edge cases (empty canvas, invalid JSON)
 
 - [ ] 6.0 Implement Data Persistency (Local Storage)
   - [ ] 6.1 Save current flow/project state to local storage automatically
