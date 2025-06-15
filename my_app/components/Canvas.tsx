@@ -64,19 +64,25 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
+    console.log('🎯 DragOver event fired');
   }, []);
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
+      console.log('🎯 Drop event fired!');
 
       if (!reactFlowWrapper.current || !reactFlowInstance) {
-        console.error('❌ ReactFlow wrapper or instance not available');
+        console.error('❌ ReactFlow wrapper or instance not available:', {
+          wrapper: !!reactFlowWrapper.current,
+          instance: !!reactFlowInstance
+        });
         return;
       }
 
       try {
         const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+        console.log('📏 ReactFlow bounds:', reactFlowBounds);
         
         // Try both data formats for compatibility
         let dragDataString = event.dataTransfer.getData('application/json');
@@ -84,8 +90,11 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           dragDataString = event.dataTransfer.getData('text/plain');
         }
         
+        console.log('📦 Raw drag data:', dragDataString);
+        
         if (!dragDataString) {
           console.error('❌ No drag data found in any format');
+          console.log('📋 Available data types:', Array.from(event.dataTransfer.types));
           return;
         }
 
@@ -97,7 +106,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           y: event.clientY - reactFlowBounds.top,
         });
 
-        console.log('📍 Drop position:', position);
+        console.log('📍 Drop position:', position, 'from client:', { x: event.clientX, y: event.clientY });
 
         // Create new node with proper data structure
         const newNode: Node = {
@@ -112,13 +121,28 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
         };
 
         console.log('✅ Creating new node:', newNode);
-        setNodes((nds: Node[]) => nds.concat(newNode));
+        setNodes((nds: Node[]) => {
+          console.log('📊 Current nodes:', nds.length, 'Adding node...');
+          return nds.concat(newNode);
+        });
       } catch (error) {
         console.error('❌ Error handling drop:', error);
       }
     },
     [reactFlowInstance, setNodes]
   );
+
+  // Wrapper-specific handlers with different logs
+  const onWrapperDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    console.log('📦 WRAPPER DragOver event fired');
+  }, []);
+
+  const onWrapperDrop = useCallback((event: React.DragEvent) => {
+    console.log('📦 WRAPPER Drop event fired!');
+    onDrop(event);
+  }, [onDrop]);
 
   // Handle programmatic node addition (from click)
   const handleAddNode = useCallback((type: string, position?: { x: number; y: number }) => {
@@ -144,8 +168,43 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     if (onAddNode) {
       // Replace the parent's onAddNode with our handler
       (onAddNode as any).current = handleAddNode;
+      // Also pass ReactFlow instance and wrapper for manual drop calculation
+      (onAddNode as any).getDropPosition = (clientX: number, clientY: number) => {
+        if (!reactFlowWrapper.current || !reactFlowInstance) {
+          console.warn('⚠️ ReactFlow not ready for position calculation');
+          return { x: clientX - 220, y: clientY - 100 };
+        }
+        
+        const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+        const position = reactFlowInstance.project({
+          x: clientX - reactFlowBounds.left,
+          y: clientY - reactFlowBounds.top,
+        });
+        
+        console.log('🎯 Calculated precise position:', position);
+        return position;
+      };
     }
-  }, [handleAddNode, onAddNode]);
+  }, [handleAddNode, onAddNode, reactFlowInstance]);
+
+  // Debug: Global drop listener
+  React.useEffect(() => {
+    const handleGlobalDrop = (e: DragEvent) => {
+      console.log('🌍 GLOBAL Drop detected at:', { x: e.clientX, y: e.clientY });
+    };
+    
+    const handleGlobalDragOver = (e: DragEvent) => {
+      e.preventDefault(); // Allow drop
+    };
+    
+    document.addEventListener('drop', handleGlobalDrop);
+    document.addEventListener('dragover', handleGlobalDragOver);
+    
+    return () => {
+      document.removeEventListener('drop', handleGlobalDrop);
+      document.removeEventListener('dragover', handleGlobalDragOver);
+    };
+  }, []);
 
   return (
     <div className="w-full h-full flex flex-col">
@@ -157,6 +216,18 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm font-medium"
           >
             Add Node
+          </button>
+          
+          <button
+            onClick={() => {
+              console.log('🧪 Test Button: ReactFlow Instance:', !!reactFlowInstance);
+              console.log('🧪 Test Button: Wrapper:', !!reactFlowWrapper.current);
+              console.log('🧪 Test Button: Current nodes:', nodes.length);
+              handleAddNode('test');
+            }}
+            className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm font-medium"
+          >
+            Test
           </button>
           
           <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
@@ -171,22 +242,25 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
         </div>
         
         <div className="text-sm text-gray-500">
-          🎯 Drag from sidebar or click to add nodes
+          🎯 Drag from sidebar | Space+Drag to pan | Right-click drag to pan | Scroll to zoom
         </div>
       </div>
 
       {/* Canvas */}
-      <div className="flex-1" ref={reactFlowWrapper}>
+      <div 
+        className="flex-1" 
+        ref={reactFlowWrapper}
+        onDrop={onWrapperDrop}
+        onDragOver={onWrapperDragOver}
+      >
         <ReactFlow
-          key="horizontal-handles-fix-v2"
+          key="horizontal-handles-fix-v3"
           nodes={nodes}
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onInit={setReactFlowInstance}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
           nodeTypes={nodeTypes}
           fitView
           snapToGrid={snapToGrid}
@@ -194,12 +268,15 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           attributionPosition="top-right"
           panOnScroll
           panOnDrag={[1, 2]}
+          panActivationKeyCode="Space"
+          selectionOnDrag
           minZoom={0.5}
           maxZoom={2}
           nodeExtent={[[-1000, -1000], [2000, 2000]]}
           connectionLineStyle={{ stroke: '#2563eb', strokeWidth: 2, strokeDasharray: '6 4' }}
           deleteKeyCode={['Delete', 'Backspace']}
           onlyRenderVisibleElements={false}
+          preventScrolling={false}
         >
           <Controls />
           <MiniMap />

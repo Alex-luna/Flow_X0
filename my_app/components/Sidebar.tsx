@@ -56,9 +56,15 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ onAddNode }) => {
   const [activeTab, setActiveTab] = useState('funnel');
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggedItem, setDraggedItem] = useState<BlockItem | null>(null);
 
   const handleDragStart = (event: React.DragEvent, item: BlockItem) => {
     try {
+      console.log('🚀 Drag started for item:', item);
+      setIsDragging(true);
+      setDraggedItem(item);
+      
       // Create a simple serializable object
       const dragData = {
         type: item.type,
@@ -66,15 +72,46 @@ const Sidebar: React.FC<SidebarProps> = ({ onAddNode }) => {
         id: item.id
       };
       
+      console.log('📦 Setting drag data:', dragData);
+      
       // Set both data formats for compatibility
       event.dataTransfer.setData('application/json', JSON.stringify(dragData));
       event.dataTransfer.setData('text/plain', JSON.stringify(dragData));
       event.dataTransfer.effectAllowed = 'copy';
       
-      console.log('🚀 Drag started for:', dragData);
+      console.log('✅ Drag data set successfully');
+      console.log('📋 DataTransfer types set:', Array.from(event.dataTransfer.types));
     } catch (error) {
       console.error('❌ Error in handleDragStart:', error);
     }
+  };
+
+  const handleDragEnd = (event: React.DragEvent) => {
+    console.log('🏁 Drag ended at position:', { x: event.clientX, y: event.clientY });
+    
+    if (isDragging && draggedItem) {
+      // Check if mouse is over canvas area (approximate)
+      const isOverCanvas = event.clientX > 220; // Sidebar width
+      
+      if (isOverCanvas) {
+        console.log('🎯 MANUAL DROP: Adding node at mouse position');
+        
+        // Use precise ReactFlow position calculation if available
+        let position = { x: event.clientX - 220, y: event.clientY - 100 };
+        
+        if ((onAddNode as any).getDropPosition) {
+          position = (onAddNode as any).getDropPosition(event.clientX, event.clientY);
+        }
+        
+        onAddNode(draggedItem.type, position);
+        console.log('✅ Node added via manual drop:', draggedItem.type, 'at', position);
+      } else {
+        console.log('🚫 Drag ended outside canvas area');
+      }
+    }
+    
+    setIsDragging(false);
+    setDraggedItem(null);
   };
 
   const handleClick = (item: BlockItem) => {
@@ -96,6 +133,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onAddNode }) => {
             key={item.id}
             draggable={true}
             onDragStart={(e) => handleDragStart(e, item)}
+            onDragEnd={(e) => handleDragEnd(e)}
             onClick={() => handleClick(item)}
             className="flex flex-col items-center justify-center p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 cursor-grab active:cursor-grabbing min-h-[80px] select-none"
             role="button"
