@@ -30,6 +30,12 @@ const animatedEdgeStyle = {
   strokeDasharray: '6 4',
 };
 
+const selectedEdgeStyle = {
+  stroke: '#ef4444', // red color for selected
+  strokeWidth: 3,
+  strokeDasharray: '6 4',
+};
+
 const edgeOptions = {
   animated: true,
   style: animatedEdgeStyle,
@@ -48,6 +54,12 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [selectedEdges, setSelectedEdges] = useState<string[]>([]);
+  const [contextMenu, setContextMenu] = useState<{
+    show: boolean;
+    x: number;
+    y: number;
+    edgeId: string | null;
+  }>({ show: false, x: 0, y: 0, edgeId: null });
 
   const onConnect: OnConnect = useCallback(
     (params: Connection) => {
@@ -237,6 +249,52 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [onKeyDown]);
 
+  // Clear edge selection when clicking on canvas
+  const onPaneClick = useCallback(() => {
+    if (selectedEdges.length > 0) {
+      console.log('🎯 Clearing edge selection');
+      setSelectedEdges([]);
+    }
+    // Also close context menu
+    setContextMenu({ show: false, x: 0, y: 0, edgeId: null });
+  }, [selectedEdges, setSelectedEdges]);
+
+  // Handle edge right-click for context menu
+  const onEdgeContextMenu = useCallback(
+    (event: React.MouseEvent, edge: Edge) => {
+      event.preventDefault();
+      event.stopPropagation();
+      console.log('🎯 Right-click on edge:', edge.id);
+      
+      setContextMenu({
+        show: true,
+        x: event.clientX,
+        y: event.clientY,
+        edgeId: edge.id
+      });
+    },
+    [setContextMenu]
+  );
+
+  // Handle context menu delete action
+  const handleContextMenuDelete = useCallback(() => {
+    if (contextMenu.edgeId) {
+      console.log('🗑️ Deleting edge from context menu:', contextMenu.edgeId);
+      setEdges((eds: Edge[]) => eds.filter(e => e.id !== contextMenu.edgeId));
+      setContextMenu({ show: false, x: 0, y: 0, edgeId: null });
+    }
+  }, [contextMenu.edgeId, setEdges, setContextMenu]);
+
+  // Update edges with dynamic styling based on selection
+  const styledEdges = React.useMemo(() => {
+    return edges.map(edge => ({
+      ...edge,
+      style: selectedEdges.includes(edge.id) ? selectedEdgeStyle : animatedEdgeStyle,
+      animated: true,
+      className: selectedEdges.includes(edge.id) ? 'selected-edge' : '',
+    }));
+  }, [edges, selectedEdges]);
+
   return (
     <div className="w-full h-full flex flex-col">
       {/* Controls Bar */}
@@ -287,10 +345,13 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
         <ReactFlow
           key="horizontal-handles-fix-v3"
           nodes={nodes}
-          edges={edges}
+          edges={styledEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onEdgeClick={onEdgeClick}
+          onEdgeContextMenu={onEdgeContextMenu}
+          onPaneClick={onPaneClick}
           onInit={setReactFlowInstance}
           nodeTypes={nodeTypes}
           fitView
@@ -308,12 +369,30 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           deleteKeyCode={['Delete', 'Backspace']}
           onlyRenderVisibleElements={false}
           preventScrolling={false}
-          onEdgeClick={onEdgeClick}
         >
           <Controls />
           <MiniMap />
           <Background gap={16} />
         </ReactFlow>
+        
+        {/* Context Menu */}
+        {contextMenu.show && (
+          <div
+            className="fixed bg-white border border-gray-200 rounded-lg shadow-lg z-[10000] py-1"
+            style={{
+              left: contextMenu.x,
+              top: contextMenu.y,
+            }}
+          >
+            <button
+              onClick={handleContextMenuDelete}
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <span className="text-red-500">🗑️</span>
+              Delete Connection
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

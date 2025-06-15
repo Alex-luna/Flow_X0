@@ -138,8 +138,8 @@
   - [x] 2.10 Implement Edge Deletion Functionality (PRIORITY 2)
     - [x] 2.10.1 Add click-to-delete edges functionality
     - [x] 2.10.2 Add keyboard shortcut for edge deletion (Delete/Backspace)
-    - [ ] 2.10.3 Add visual feedback for edge selection/hover
-    - [ ] 2.10.4 Implement edge context menu with delete option
+    - [x] 2.10.3 Add visual feedback for edge selection/hover
+    - [x] 2.10.4 Implement edge context menu with delete option
   - [ ] 2.11 Implement Node Properties Panel (PRIORITY 3)
     - [ ] 2.11.1 Create right sidebar panel component
     - [ ] 2.11.2 Add node selection state management
