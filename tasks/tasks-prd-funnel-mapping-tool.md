@@ -3,7 +3,7 @@
 - `components/Canvas.tsx` - Componente principal do canvas infinito para desenhar funis e fluxogramas com drag & drop corrigido.
 - `components/Sidebar.tsx` - Biblioteca de blocos arrastáveis/clicáveis completamente redesenhada com layout limpo.
 - `components/MiniMap.tsx` - Mini mapa para navegação do canvas.
-- `components/Header.tsx` - Header para navegação e mock de projetos/pastas.
+- `components/Header.tsx` - Header completo com navegação e gerenciamento mock de projetos/pastas incluindo dropdown, filtros e modais.
 - `components/ExportMenu.tsx` - Exportação do canvas (PDF/PNG/JPG/JSON) e importação de fluxos.
 - `components/ShareModal.tsx` - Compartilhamento de URL (mock).
 - `components/Node.tsx` - Blocos/nodes customizáveis com composição de layers corrigida e tamanhos proporcionais.
@@ -12,6 +12,7 @@
 - `lib/utils/canvasHelpers.ts` - Funções utilitárias para manipulação do canvas e serialização/deserialização de fluxos.
 - `lib/utils/jsonSchema.ts` - Schema e helpers para exportação/importação JSON (compatível com n8n).
 - `styles/` - Estilos globais e de componentes (Tailwind ou shadcn/ui).
+- `app/MainAppClient.tsx` - Componente principal da aplicação integrando Header, Sidebar e Canvas com estado de projeto.
 
 ### Notes
 
@@ -23,7 +24,7 @@
 - [x] 1.0 Implement Infinite Canvas and Node System
 - [x] 2.0 Build Sidebar with Draggable/Clickable Blocks
 - [x] 3.0 Add Mini Map for Canvas Navigation
-- [ ] 4.0 Create Header with Project/Folder Mock Management
+- [x] 4.0 Create Header with Project/Folder Mock Management
 - [ ] 5.0 Implement Export, Import, and Share Functionality
 - [ ] 6.0 Implement Data Persistency (Local Storage)
 
@@ -153,10 +154,10 @@
   - [x] 3.2 Allow navigation and zoom via the mini map
   - [x] 3.3 Ensure responsiveness and accessibility
 
-- [ ] 4.0 Create Header with Project/Folder Mock Management
-  - [ ] 4.1 Implement header layout and navigation
-  - [ ] 4.2 Add mock project/folder creation, selection, and deletion (UI only)
-  - [ ] 4.3 Display current project/folder name and status
+- [x] 4.0 Create Header with Project/Folder Mock Management
+  - [x] 4.1 Implement header layout and navigation
+  - [x] 4.2 Add mock project/folder creation, selection, and deletion (UI only)
+  - [x] 4.3 Display current project/folder name and status
 
 - [ ] 5.0 Implement Export, Import, and Share Functionality
   - [ ] 5.1 Implement export of canvas as PDF, PNG, and JPG
