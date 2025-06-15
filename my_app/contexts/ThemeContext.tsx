@@ -50,7 +50,7 @@ export interface Theme {
   };
 }
 
-// Enhanced dark theme based on UX Color Guide
+// Enhanced dark theme based on UX Color Guide with softer accent colors
 const darkTheme: Theme = {
   name: 'dark',
   colors: {
@@ -69,31 +69,31 @@ const darkTheme: Theme = {
     border: {
       primary: '#2D3748',     // Bordas sutis
       secondary: '#4A5568',   // Bordas mais evidentes
-      focus: '#D73120',       // Flow X red para focus
+      focus: '#FE5F55',       // Coral suave para focus
     },
     accent: {
-      primary: '#D73120',     // Vermelho Principal da marca
-      secondary: '#C32D1C',   // Vermelho Hover
-      success: '#38B25D',     // Verde Dark
-      warning: '#EC9E24',     // Âmbar Dark
-      danger: '#D73120',      // Vermelho da marca para perigo
+      primary: '#FE5F55',     // Coral Principal (mais suave)
+      secondary: '#E94A40',   // Coral Hover (mais escuro)
+      success: '#6EEB83',     // Verde Suave (da paleta)
+      warning: '#FFAE03',     // Laranja (da paleta)
+      danger: '#D73120',      // Vermelho original só para perigo
     },
     node: {
       background: '#232A3A',  // Cards/Modals background
       border: '#2D3748',      // Bordas sutis
-      selected: '#D73120',    // Vermelho da marca
-      hover: '#C32D1C',       // Vermelho hover
+      selected: '#FE5F55',    // Coral suave
+      hover: '#E94A40',       // Coral hover
     },
     canvas: {
       background: '#2D3748',  // Background Canvas
       grid: '#4A5568',        // Grid mais sutil
-      edge: '#D73120',        // Vermelho da marca
-      edgeSelected: '#C32D1C', // Vermelho hover
+      edge: '#6EEB83',        // Verde suave para conexões normais
+      edgeSelected: '#D73120', // Vermelho original só para delete
     },
   },
 };
 
-// Clean light theme
+// Clean light theme with softer accent colors
 const lightTheme: Theme = {
   name: 'light',
   colors: {
@@ -112,26 +112,26 @@ const lightTheme: Theme = {
     border: {
       primary: '#e2e8f0',
       secondary: '#cbd5e1',
-      focus: '#3b82f6',
+      focus: '#FE5F55',       // Coral suave para focus
     },
     accent: {
-      primary: '#D73120',     // Flow X red
-      secondary: '#3b82f6',   // Blue
-      success: '#10b981',     // Green
-      warning: '#f59e0b',     // Orange
-      danger: '#ef4444',      // Red
+      primary: '#FE5F55',     // Coral Principal (mais suave)
+      secondary: '#E94A40',   // Coral Hover
+      success: '#6EEB83',     // Verde Suave (da paleta)
+      warning: '#FFAE03',     // Laranja (da paleta)
+      danger: '#D73120',      // Vermelho original só para perigo
     },
     node: {
       background: '#ffffff',
       border: '#e2e8f0',
-      selected: '#D73120',    // Flow X red
-      hover: '#10b981',
+      selected: '#FE5F55',    // Coral suave
+      hover: '#E94A40',       // Coral hover
     },
     canvas: {
       background: '#ffffff',
       grid: '#f1f5f9',
-      edge: '#D73120',        // Flow X red
-      edgeSelected: '#ef4444',
+      edge: '#4ade80',        // Verde mais suave para modo claro
+      edgeSelected: '#D73120', // Vermelho original só para delete
     },
   },
 };
