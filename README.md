@@ -1,131 +1,276 @@
-# 🚀 AI Dev Tasks for Cursor 🤖
+# 🎯 Flow X0 - Funnel Mapping Tool
 
-Welcome to **AI Dev Tasks**! This repository provides a collection of `.mdc` (Markdown Command) files designed to supercharge your feature development workflow within the [Cursor](https://cursor.sh/) editor. By leveraging these commands with Cursor's AI Agent, you can systematically approach building features, from ideation to implementation, with built-in checkpoints for verification.
+Uma ferramenta visual intuitiva para criação e simulação de funis e fluxogramas de marketing, permitindo validar hipóteses e cenários de conversão de forma simples, prática e visual.
 
-Stop wrestling with monolithic AI requests and start guiding your AI collaborator step-by-step!
+![Flow X0 Banner](./Assets/banner.png)
 
-## ✨ The Core Idea
+## 📋 Sobre o Projeto
 
-Building complex features with AI can sometimes feel like a black box. This workflow aims to bring structure, clarity, and control to the process by:
+Flow X0 é um MVP focado em interface (sem backend) que permite aos profissionais de marketing digital, gestores de tráfego e empreendedores criarem funis visuais de forma rápida e eficiente. Inspirado em ferramentas como Funnel Lytics e Geru, mas com foco na simplicidade e acessibilidade.
 
-1.  **Defining Scope:** Clearly outlining what needs to be built with a Product Requirement Document (PRD).
-2.  **Detailed Planning:** Breaking down the PRD into a granular, actionable task list.
-3.  **Iterative Implementation:** Guiding the AI to tackle one task at a time, allowing you to review and approve each change.
+### 🎯 Problema Resolvido
+Facilitar a criação, visualização e simulação de funis e fluxogramas de marketing, permitindo validar hipóteses e cenários de conversão de forma visual, simples e prática.
 
-This structured approach helps ensure the AI stays on track, makes it easier to debug issues, and gives you confidence in the generated code.
+### 👥 Usuários-alvo
+- Profissionais de marketing digital
+- Gestores de tráfego
+- Empreendedores
+- Times de produto e growth
 
-## Workflow: From Idea to Implemented Feature 💡➡️💻
+## ✨ Funcionalidades Principais
 
-Here's the step-by-step process using the `.mdc` files in this repository:
+### 🎨 Canvas Infinito
+- Canvas infinito para desenhar funis e fluxogramas
+- Drag & drop intuitivo
+- Snap to grid opcional (16x16px)
+- Navegação com zoom e pan
 
-### 1️⃣ Create a Product Requirement Document (PRD)
+### 🧩 Biblioteca de Blocos
+- **16 tipos de blocos pré-definidos:**
+  - Thank You Page
+  - User Profile
+  - Content/Blog Post
+  - Popup/Modal
+  - Comments/Feedback
+  - Call-to-Action (3 variações)
+  - Base Screen Template
+  - URL Redirect
+  - Survey/Form
+  - Registration Form
+  - Payment/Checkout
+  - Generic Page
+  - Calendar/Scheduling
+  - Download/File
 
-First, lay out the blueprint for your feature. A PRD clarifies what you're building, for whom, and why.
+### 🔗 Conectores Animados
+- Linhas pontilhadas azuis com animação contínua
+- Prevenção de auto-conexão
+- Prevenção de conexões duplicadas
+- Estilo personalizado e responsivo
 
-You can create a lightweight PRD directly within Cursor:
+### 🗺️ Navegação
+- Mini mapa para navegação do canvas
+- Controles de zoom e pan
+- Barra de controles no topo
 
-1.  Ensure you have the `create-prd.mdc` file from this repository accessible.
-2.  In Cursor's Agent chat, initiate PRD creation:
+### 📤 Exportação
+- Exportação em PDF, PNG e JPG
+- Exportação em JSON (compatível com n8n)
+- Importação de fluxos JSON
+- Compartilhamento via URL (mock)
 
-    ```
-    Use @create-prd.mdc
-    Here's the feature I want to build: [Describe your feature in detail]
-    Reference these files to help you: [Optional: @file1.py @file2.ts]
-    ```
-    *(Pro Tip: For complex PRDs, using MAX mode in Cursor is highly recommended if your budget allows for more comprehensive generation.)*
+### 💾 Persistência Local
+- Salvamento automático no localStorage
+- Carregamento do último projeto
+- Gerenciamento de projetos/pastas (mock)
 
-    ![Example of initiating PRD creation](https://pbs.twimg.com/media/Go6DDlyX0AAS7JE?format=jpg&name=large)
+## 🛠️ Stack Técnica
 
-### 2️⃣ Generate Your Task List from the PRD
+### Frontend
+- **React 18** - Framework principal
+- **Next.js 14** - Framework full-stack
+- **TypeScript** - Tipagem estática
+- **Tailwind CSS** - Estilização utilitária
+- **shadcn/ui** - Componentes de UI
+- **Framer Motion** - Animações
 
-With your PRD drafted (e.g., `MyFeature-PRD.md`), the next step is to generate a detailed, step-by-step implementation plan for your AI Developer.
+### Canvas e Fluxo
+- **React Flow** - Sistema de canvas e nodes
+- **Lucide React** - Ícones
+- **html2canvas** - Captura de canvas
+- **jsPDF** - Geração de PDF
 
-1.  Ensure you have `generate-tasks-from-prd.mdc` accessible.
-2.  In Cursor's Agent chat, use the PRD to create tasks:
+### Estado e Utilitários
+- **Zustand** - Gerenciamento de estado
+- **clsx** - Utilitário de classes CSS
+- **React Hook Form** - Gerenciamento de formulários
 
-    ```
-    Now take @MyFeature-PRD.md and create tasks using @generate-tasks-from-prd.mdc
-    ```
-    *(Note: Replace `@MyFeature-PRD.md` with the actual filename of the PRD you generated in step 1.)*
+## 🚀 Como Executar
 
-    ![Example of generating tasks from PRD](https://pbs.twimg.com/media/Go6FITbWkAA-RCT?format=jpg&name=medium)
+### Pré-requisitos
+- Node.js 18+ 
+- npm ou yarn
 
-### 3️⃣ Examine Your Task List
+### Instalação
 
-You'll now have a well-structured task list, often with tasks and sub-tasks, ready for the AI to start working on. This provides a clear roadmap for implementation.
+```bash
+# Clone o repositório
+git clone [URL_DO_REPOSITORIO]
+cd Flow_X0
 
-![Example of a generated task list](https://pbs.twimg.com/media/Go6GNuOWsAEcSDm?format=jpg&name=medium)
+# Navegue até a aplicação
+cd my_app
 
-### 4️⃣ Instruct the AI to Work Through Tasks (and Mark Completion)
+# Instale as dependências
+npm install
 
-To ensure methodical progress and allow for verification, we'll use `process-task-list.mdc`. This command instructs the AI to focus on one task at a time and wait for your go-ahead before moving to the next.
+# Execute em modo de desenvolvimento
+npm run dev
 
-1.  Create or ensure you have the `process-task-list.mdc` file accessible.
-2.  In Cursor's Agent chat, tell the AI to start with the first task (e.g., `1.1`):
+# Ou com yarn
+yarn install
+yarn dev
+```
 
-    ```
-    Please start on task 1.1 and use @process-task-list.mdc
-    ```
-    *(Important: You only need to reference `@process-task-list.mdc` for the *first* task. The instructions within it guide the AI for subsequent tasks.)*
+### Build para Produção
 
-    The AI will attempt the task and then prompt you to review.
+```bash
+# Build da aplicação
+npm run build
 
-    ![Example of starting on a task with process-task-list.mdc](https://pbs.twimg.com/media/Go6I41KWcAAAlHc?format=jpg&name=medium)
+# Execução da build
+npm start
+```
 
-### 5️⃣ Review, Approve, and Progress ✅
+A aplicação estará disponível em `http://localhost:3000`
 
-As the AI completes each task, you review the changes.
-*   If the changes are good, simply reply with "yes" (or a similar affirmative) to instruct the AI to mark the task complete and move to the next one.
-*   If changes are needed, provide feedback to the AI to correct the current task before moving on.
+## 📁 Estrutura do Projeto
 
-You'll see a satisfying list of completed items grow, providing a clear visual of your feature coming to life!
+```
+Flow_X0/
+├── my_app/                 # Aplicação principal
+│   ├── app/               # App Router (Next.js 14)
+│   │   ├── components/        # Componentes React
+│   │   │   ├── Canvas.tsx     # Canvas principal
+│   │   │   ├── Sidebar.tsx    # Biblioteca de blocos
+│   │   │   ├── Node.tsx       # Componente de node
+│   │   │   ├── MiniMap.tsx    # Mini mapa
+│   │   │   ├── Header.tsx     # Cabeçalho
+│   │   │   └── icons/         # Ícones SVG customizados
+│   │   ├── lib/              # Utilitários e helpers
+│   │   │   └── utils/        # Funções auxiliares
+│   │   └── styles/           # Estilos globais
+│   ├── docs/                 # Documentação
+│   ├── tasks/               # Documentos de planejamento
+│   └── Assets/              # Assets do projeto
+```
 
-![Example of a progressing task list with completed items](https://pbs.twimg.com/media/Go6KrXZWkAA_UuX?format=jpg&name=medium)
+## 🎨 Design System
 
-While it's not always perfect, this method has proven to be a very reliable way to build out larger features with AI assistance.
+### Princípios de UI/UX
+- **Clareza First:** Cada elemento serve um propósito claro
+- **Hierarquia Visual:** Níveis de importância bem definidos
+- **Responsividade:** Mobile-first design
+- **Acessibilidade:** WCAG 2.1 AA compliance
+- **Microinterações:** Feedback visual em todas as ações
 
-### Video Demonstration 🎥
+### Cores Principais
+- **Azul Principal:** `#2563eb` (conexões e elementos primários)
+- **Cinza Neutro:** `#6b7280` (textos secundários)
+- **Verde Sucesso:** `#10b981` (ações positivas)
+- **Vermelho Erro:** `#ef4444` (erros e validações)
 
-If you'd like to see this in action, I demonstrated it on [Claire Vo's "How I AI" podcast](https://www.youtube.com/watch?v=fD4ktSkNCw4).
+### Espaçamento
+- **Grid Base:** 16px
+- **Espaçamento Mínimo:** 1rem
+- **Touch Targets:** Mínimo 48x48px
 
-![Demonstration of AI Dev Tasks on How I AI Podcast](https://img.youtube.com/vi/fD4ktSkNCw4/maxresdefault.jpg)
+## 📱 Responsividade
 
-## 🗂️ Files in this Repository
+### Breakpoints
+- **Mobile:** < 768px
+- **Tablet:** 768px - 1024px  
+- **Desktop:** > 1024px
 
-*   **`create-prd.mdc`**: Guides the AI in generating a Product Requirement Document for your feature.
-*   **`generate-tasks-from-prd.mdc`**: Takes a PRD markdown file as input and helps the AI break it down into a detailed, step-by-step implementation task list.
-*   **`process-task-list.mdc`**: Instructs the AI on how to process the generated task list, tackling one task at a time and waiting for your approval before proceeding. (This file also contains logic for the AI to mark tasks as complete).
+### Adaptações
+- Sidebar colapsível em mobile
+- Controles de toque otimizados
+- Canvas responsivo com gestos
 
-## 🌟 Benefits
+## ♿ Acessibilidade
 
-*   **Structured Development:** Enforces a clear process from idea to code.
-*   **Step-by-Step Verification:** Allows you to review and approve AI-generated code at each small step, ensuring quality and control.
-*   **Manages Complexity:** Breaks down large features into smaller, digestible tasks for the AI, reducing the chance of it getting lost or generating overly complex, incorrect code.
-*   **Improved Reliability:** Offers a more dependable approach to leveraging AI for significant development work compared to single, large prompts.
-*   **Clear Progress Tracking:** Provides a visual representation of completed tasks, making it easy to see how much has been done and what's next.
+### Recursos Implementados
+- Navegação completa por teclado
+- ARIA labels e roles adequados
+- Contraste mínimo 4.5:1
+- Suporte a screen readers
+- Indicadores de foco visuais
+- Modo escuro automático
 
-## 🛠️ How to Use
+### Testes
+- Auditoria Lighthouse contínua
+- Testes com simuladores de daltonismo
+- Validação com leitores de tela
 
-1.  **Clone or Download:** Get these `.mdc` files into your project or a central location where Cursor can access them.
-2.  **Follow the Workflow:** Systematically use the `.mdc` files in Cursor's Agent chat as described in the 5-step workflow above.
-3.  **Adapt and Iterate:**
-    *   Feel free to modify the prompts within the `.mdc` files to better suit your specific needs or coding style.
-    *   If the AI struggles with a task, try rephrasing your initial feature description or breaking down tasks even further.
+## 🧪 Testes
 
-## 💡 Tips for Success
+```bash
+# Executar todos os testes
+npm test
 
-*   **Be Specific:** The more context and clear instructions you provide (both in your initial feature description and any clarifications), the better the AI's output will be.
-*   **MAX Mode for PRDs:** As mentioned, using MAX mode in Cursor for PRD creation (`create-prd.mdc`) can yield more thorough and higher-quality results if your budget supports it.
-*   **Correct File Tagging:** Always ensure you're accurately tagging the PRD filename (e.g., `@MyFeature-PRD.md`) when generating tasks.
-*   **Patience and Iteration:** AI is a powerful tool, but it's not magic. Be prepared to guide, correct, and iterate. This workflow is designed to make that iteration process smoother.
+# Executar testes específicos
+npm test Canvas.test.tsx
 
-## 🤝 Contributing
+# Executar testes em modo watch
+npm test --watch
+```
 
-Got ideas to improve these `.mdc` files or have new ones that fit this workflow? Contributions are welcome!
-Please feel free to:
-*   Open an issue to discuss changes or suggest new features.
-*   Submit a pull request with your enhancements.
+## 📈 Status do Desenvolvimento
+
+### ✅ Concluído
+- [x] Canvas infinito com React Flow
+- [x] Sistema de nodes customizáveis
+- [x] Biblioteca de 16 blocos pré-definidos
+- [x] Drag & drop funcional
+- [x] Conectores animados
+- [x] Snap to grid
+- [x] Controles de navegação
+
+### 🚧 Em Desenvolvimento
+- [ ] Mini mapa
+- [ ] Header com gerenciamento de projetos
+- [ ] Sistema de exportação completo
+- [ ] Modal de compartilhamento
+- [ ] Persistência local
+
+### 📋 Roadmap
+- [ ] Painel de propriedades de nodes
+- [ ] Presets de funis prontos
+- [ ] Temas personalizáveis
+- [ ] Colaboração em tempo real
+- [ ] Integração com APIs de marketing
+
+## 🤝 Contribuindo
+
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'feat: Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+### Padrões de Commit
+Seguimos o padrão [Conventional Commits](https://www.conventionalcommits.org/):
+
+- `feat:` - Nova funcionalidade
+- `fix:` - Correção de bug
+- `docs:` - Alterações na documentação
+- `style:` - Formatação, espaços em branco, etc.
+- `refactor:` - Refatoração de código
+- `test:` - Adição ou correção de testes
+- `chore:` - Tarefas de manutenção
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+## 🙏 Agradecimentos
+
+- [React Flow](https://reactflow.dev/) - Sistema de canvas
+- [shadcn/ui](https://ui.shadcn.com/) - Componentes de UI
+- [Lucide](https://lucide.dev/) - Biblioteca de ícones
+- [Tailwind CSS](https://tailwindcss.com/) - Framework CSS
 
 ---
 
-Happy AI-assisted developing!
+## 📞 Contato
+
+**Luna Labs** - [contato@lunalabs.com.br](mailto:contato@lunalabs.com.br)
+
+**Link do Projeto:** [https://github.com/lunalabs/flow-x0](https://github.com/lunalabs/flow-x0)
+
+---
+
+<div align="center">
+  <p>Feito com ❤️ por <strong>Luna Labs</strong></p>
+  <p>🚀 Transformando ideias em fluxos visuais</p>
+</div> 
