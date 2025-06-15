@@ -59,7 +59,7 @@ interface CustomNodeProps extends NodeProps {
   dataUpdater?: (id: string, newData: any) => void;
 }
 
-const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, sourcePosition = Position.Right, targetPosition = Position.Left, xPos, yPos, ...props }: CustomNodeProps) => {
+const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, xPos, yPos, ...props }: CustomNodeProps) => {
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(data.label || '');
   const [color, setColor] = useState(data.color || COLORS[0]);
@@ -114,71 +114,79 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, so
   if (isFunnelStep) {
     return (
       <div className="relative">
+        {/* SVG positioned behind everything */}
+        <div className="absolute inset-0 w-[105px] h-[135px] z-0" style={{ marginTop: '8px', marginBottom: '32px' }}>
+          {/* Base screen icon - scaled to exact container size */}
+          <ScreenIcon 
+            className="w-full h-full" 
+            style={{ 
+              width: '105px', 
+              height: '135px',
+              display: 'block'
+            }} 
+          />
+          
+          {/* Overlay icon - positioned within the screen content area */}
+          {overlayIcon && (
+            <div className="absolute inset-0 flex items-center justify-center" style={{ top: '20px', bottom: '20px' }}>
+              <div className="w-8 h-8 flex items-center justify-center">
+                {React.createElement(overlayIcon, { className: "w-full h-full" })}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Selection ring */}
         {selected && (
-          <div className="absolute -inset-1 bg-blue-500 rounded-lg opacity-20 z-0" />
+          <div className="absolute -inset-1 bg-blue-500 rounded-lg opacity-20 z-10" style={{ marginTop: '7px', marginBottom: '31px' }} />
         )}
         
-        {/* Main node container */}
+        {/* Invisible clickable container - maintains functionality */}
         <div 
-          className={`relative w-[105px] h-[135px] overflow-hidden transition-all duration-200 ${
+          className={`relative w-[105px] h-[135px] bg-transparent cursor-pointer transition-all duration-200 ${
             selected 
               ? 'ring-2 ring-blue-500 ring-offset-2' 
               : ''
           }`}
           onDoubleClick={() => setEditing(true)}
           onKeyDown={handleKeyDown}
-          style={{ marginTop: '8px', marginBottom: '32px' }}
+          style={{ marginTop: '8px', marginBottom: '32px', zIndex: 20 }}
+          tabIndex={0}
+          ref={nodeRef}
         >
-          {/* SVG fills entire container - no spacing */}
-          <div className="absolute inset-0 w-full h-full">
-            {/* Base screen icon - scaled to exact container size */}
-            <ScreenIcon 
-              className="w-full h-full" 
-              style={{ 
-                width: '105px', 
-                height: '135px',
-                display: 'block'
-              }} 
-            />
-            
-            {/* Overlay icon - positioned within the screen content area */}
-            {overlayIcon && (
-              <div className="absolute inset-0 flex items-center justify-center" style={{ top: '20px', bottom: '20px' }}>
-                <div className="w-8 h-8 flex items-center justify-center">
-                  {React.createElement(overlayIcon, { className: "w-full h-full" })}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Connection handles - positioned on the SVG edges with proper z-index */}
+          {/* Connection handles - ALWAYS visible with high z-index */}
           <Handle
+            id="target-left"
             type="target"
-            position={Position.Top}
-            className="w-3 h-3 bg-blue-500 border-2 border-white"
+            position={Position.Left}
+            className="w-3 h-3 bg-blue-500 border-2 border-white shadow-lg"
             style={{ 
-              top: '-8px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              zIndex: 1000
+              left: '-8px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 9999,
+              position: 'absolute'
             }}
+            isConnectable={isConnectable}
           />
           <Handle
+            id="source-right"
             type="source"
-            position={Position.Bottom}
-            className="w-3 h-3 bg-blue-500 border-2 border-white"
+            position={Position.Right}
+            className="w-3 h-3 bg-blue-500 border-2 border-white shadow-lg"
             style={{ 
-              bottom: '-8px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              zIndex: 1000
+              right: '-8px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 9999,
+              position: 'absolute'
             }}
+            isConnectable={isConnectable}
           />
         </div>
 
-        {/* Label container - positioned outside the SVG with proper visibility */}
-        <div className="absolute -bottom-6 left-0 right-0 z-50">
+        {/* Label container - positioned outside with proper spacing */}
+        <div className="absolute -bottom-10 left-0 right-0 z-[10000]">
           {editing ? (
             <input
               type="text"
@@ -236,12 +244,14 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, so
 
         {/* Connection handles */}
         <Handle
+          id="traditional-target-left"
           type="target"
           position={Position.Left}
           className="w-2 h-2 bg-blue-500 border border-white"
           style={{ zIndex: 1000 }}
         />
         <Handle
+          id="traditional-source-right"
           type="source"
           position={Position.Right}
           className="w-2 h-2 bg-blue-500 border border-white"

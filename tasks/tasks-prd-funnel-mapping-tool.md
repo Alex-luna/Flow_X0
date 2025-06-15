@@ -127,10 +127,10 @@
     - [x] **Container Match**: Removed padding/borders for seamless appearance
     - [x] **preserveAspectRatio**: Added "none" for perfect scaling
     - [x] **Visual Unity**: SVG and container appear as single element
-  - [ ] 2.8 Fix Critical Connection and Visual Issues (PRIORITY 1)
-    - [ ] 2.8.1 Restore connection handles visibility and functionality
-    - [ ] 2.8.2 Fix node labels disappearing on canvas
-    - [ ] 2.8.3 Fix drag & drop functionality from sidebar to canvas
+  - [x] 2.8 Fix Critical Connection and Visual Issues (PRIORITY 1)
+    - [x] 2.8.1 Restore connection handles visibility and functionality
+    - [x] 2.8.2 Fix node labels disappearing on canvas
+    - [x] 2.8.3 Fix drag & drop functionality from sidebar to canvas
   - [ ] 2.9 Enhance Inner SVG Content (PRIORITY 2)
     - [ ] 2.9.1 Increase overlay icon size by 4x within screen boundaries
     - [ ] 2.9.2 Ensure proper spacing and visual balance

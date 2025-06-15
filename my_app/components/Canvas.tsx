@@ -178,6 +178,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
       {/* Canvas */}
       <div className="flex-1" ref={reactFlowWrapper}>
         <ReactFlow
+          key="horizontal-handles-fix-v2"
           nodes={nodes}
           edges={edges}
           onNodesChange={onNodesChange}
@@ -197,6 +198,8 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           maxZoom={2}
           nodeExtent={[[-1000, -1000], [2000, 2000]]}
           connectionLineStyle={{ stroke: '#2563eb', strokeWidth: 2, strokeDasharray: '6 4' }}
+          deleteKeyCode={['Delete', 'Backspace']}
+          onlyRenderVisibleElements={false}
         >
           <Controls />
           <MiniMap />
