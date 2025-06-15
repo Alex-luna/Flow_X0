@@ -26,7 +26,7 @@
 - [x] 3.0 Add Mini Map for Canvas Navigation
 - [x] 4.0 Create Header with Project/Folder Mock Management
 - [x] 5.0 Implement Export, Import, and Share Functionality
-- [ ] 6.0 Implement Data Persistency (Local Storage)
+- [x] 6.0 Implement Data Persistency (Local Storage)
 
 ---
 
@@ -171,6 +171,29 @@
   - [ ] 6.2 Load last opened flow/project from local storage on app start
   - [ ] 6.3 Provide UI feedback for save/load actions
   - [ ] 6.4 Add option to reset/clear local storage data
+
+- [ ] 7.0 UI/UX Improvements and Dark Mode Implementation
+  - [x] 7.1 Fix Layout Issues
+    - [x] 7.1.1 Remove duplicate "Flow X" title from canvas area
+    - [x] 7.1.2 Fix sidebar whitespace and alignment issues
+    - [x] 7.1.3 Remove excessive right margin from canvas
+    - [x] 7.1.4 Make canvas use full available screen space
+    - [ ] 7.1.5 Fix scrolling issues with mini map visibility
+  - [ ] 7.2 Implement Dark Mode Theme System
+    - [x] 7.2.1 Create theme context and provider
+    - [x] 7.2.2 Design Monokai/Dracula inspired dark color palette
+    - [x] 7.2.3 Create light mode color palette for contrast
+    - [x] 7.2.4 Add theme toggle button in header
+    - [x] 7.2.5 Apply dark theme to Header component
+    - [x] 7.2.6 Apply dark theme to Sidebar component
+    - [ ] 7.2.7 Apply dark theme to Canvas and controls
+    - [ ] 7.2.8 Apply dark theme to all modals (Export, Share, etc.)
+    - [ ] 7.2.9 Ensure proper contrast and accessibility in both themes
+  - [ ] 7.3 Enhanced Visual Design
+    - [ ] 7.3.1 Improve component spacing and typography
+    - [ ] 7.3.2 Add subtle animations and transitions
+    - [ ] 7.3.3 Enhance icons and visual hierarchy
+    - [ ] 7.3.4 Polish overall aesthetic consistency
 
 ---
 

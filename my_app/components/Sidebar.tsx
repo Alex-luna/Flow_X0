@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Import all funnel step icons
 import UrlIcon from './icons/UrlIcon';
@@ -55,6 +56,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ onAddNode }) => {
+  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState('funnel');
   const [isDragging, setIsDragging] = useState(false);
   const [draggedItem, setDraggedItem] = useState<BlockItem | null>(null);
@@ -135,7 +137,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onAddNode }) => {
             onDragStart={(e) => handleDragStart(e, item)}
             onDragEnd={(e) => handleDragEnd(e)}
             onClick={() => handleClick(item)}
-            className="flex flex-col items-center justify-center p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 cursor-grab active:cursor-grabbing min-h-[80px] select-none"
+            className="flex flex-col items-center justify-center p-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 cursor-grab active:cursor-grabbing min-h-[80px] select-none hover:brightness-110"
+            style={{
+              backgroundColor: theme.colors.background.elevated,
+              borderColor: theme.colors.border.primary,
+              border: '1px solid'
+            }}
             role="button"
             tabIndex={0}
             aria-label={`Add ${item.label} node`}
@@ -143,7 +150,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onAddNode }) => {
             <div className="flex items-center justify-center w-10 h-10 mb-2">
               <IconComponent className="w-full h-full" />
             </div>
-            <span className="text-xs font-medium text-gray-700 text-center leading-tight">
+            <span 
+              className="text-xs font-medium text-center leading-tight"
+              style={{ color: theme.colors.text.primary }}
+            >
               {item.label}
             </span>
           </div>
@@ -153,28 +163,41 @@ const Sidebar: React.FC<SidebarProps> = ({ onAddNode }) => {
   );
 
   return (
-    <div className="w-[220px] h-full bg-gray-50 border-r border-gray-200 flex flex-col">
+    <div 
+      className="w-[220px] h-full flex flex-col border-r"
+      style={{ 
+        backgroundColor: theme.colors.background.secondary,
+        borderColor: theme.colors.border.primary
+      }}
+    >
       {/* Custom Tabs Implementation */}
       <div className="flex flex-col h-full">
-        <div className="p-4 border-b border-gray-200">
-          <div className="grid grid-cols-2 bg-white rounded-lg border border-gray-200">
+        <div className="p-4 border-b" style={{ borderColor: theme.colors.border.primary }}>
+          <div 
+            className="grid grid-cols-2 rounded-lg border"
+            style={{ 
+              backgroundColor: theme.colors.background.elevated,
+              borderColor: theme.colors.border.primary
+            }}
+          >
             <button
               onClick={() => setActiveTab('blocks')}
-              className={`px-3 py-2 text-sm font-medium rounded-l-lg transition-all ${
-                activeTab === 'blocks'
-                  ? 'bg-gray-100 text-gray-900 border-r border-gray-200'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
+              className={`px-3 py-2 text-sm font-medium rounded-l-lg transition-all`}
+              style={{
+                backgroundColor: activeTab === 'blocks' ? theme.colors.background.tertiary : 'transparent',
+                color: activeTab === 'blocks' ? theme.colors.text.primary : theme.colors.text.secondary,
+                borderRight: `1px solid ${theme.colors.border.primary}`
+              }}
             >
               Blocos
             </button>
             <button
               onClick={() => setActiveTab('funnel')}
-              className={`px-3 py-2 text-sm font-medium rounded-r-lg transition-all ${
-                activeTab === 'funnel'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
+              className={`px-3 py-2 text-sm font-medium rounded-r-lg transition-all`}
+              style={{
+                backgroundColor: activeTab === 'funnel' ? theme.colors.accent.primary : 'transparent',
+                color: activeTab === 'funnel' ? theme.colors.text.inverse : theme.colors.text.secondary
+              }}
             >
               Funnel Steps
             </button>

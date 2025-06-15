@@ -34,14 +34,14 @@ export default function MainAppClient() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-full">
+    <div className="flex flex-col h-full w-full">
       <Header 
         currentProject={currentProject} 
         onProjectChange={handleProjectChange}
       />
-      <main className="flex flex-row w-full flex-1 max-w-7xl mx-auto h-full">
+      <main className="flex flex-row flex-1 h-full overflow-hidden">
         <Sidebar onAddNode={handleAddNode} />
-        <div className="flex-1">
+        <div className="flex-1 h-full">
           <Canvas onAddNode={addNodeRef as any} />
         </div>
       </main>

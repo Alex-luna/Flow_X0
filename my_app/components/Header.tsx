@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ExportMenu from './ExportMenu';
 import ShareModal from './ShareModal';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface Project {
   id: string;
@@ -37,6 +38,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ currentProject, onProjectChange }) => {
+  const { theme, isDark, toggleTheme } = useTheme();
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [showProjectModal, setShowProjectModal] = useState(false);
@@ -127,32 +129,68 @@ const Header: React.FC<HeaderProps> = ({ currentProject, onProjectChange }) => {
   };
 
   return (
-    <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
+    <div 
+      className="h-16 flex items-center justify-between px-6 border-b"
+      style={{ 
+        backgroundColor: theme.colors.background.elevated,
+        borderColor: theme.colors.border.primary
+      }}
+    >
       {/* Left Section - Brand and Project */}
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">FX</span>
+          <div 
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: theme.colors.accent.primary }}
+          >
+            <span 
+              className="font-bold text-sm"
+              style={{ color: theme.colors.text.inverse }}
+            >
+              FX
+            </span>
           </div>
-          <h1 className="text-xl font-semibold text-gray-900">Flow X</h1>
+          <h1 
+            className="text-xl font-semibold"
+            style={{ color: theme.colors.text.primary }}
+          >
+            Flow X
+          </h1>
         </div>
 
-        <div className="h-6 w-px bg-gray-300" />
+        <div 
+          className="h-6 w-px"
+          style={{ backgroundColor: theme.colors.border.secondary }}
+        />
 
         {/* Project Selector */}
         <div className="relative">
           <button
             onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-            className="flex items-center gap-3 px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:brightness-110"
+            style={{ 
+              backgroundColor: theme.colors.background.secondary
+            }}
           >
             <div className="flex items-center gap-2">
               <div 
                 className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: currentFolderData?.color || '#6b7280' }}
+                style={{ backgroundColor: currentFolderData?.color || theme.colors.border.secondary }}
               />
-              <span className="font-medium text-gray-900">{currentProjectData.name}</span>
+              <span 
+                className="font-medium"
+                style={{ color: theme.colors.text.primary }}
+              >
+                {currentProjectData.name}
+              </span>
             </div>
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg 
+              className="w-4 h-4" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+              style={{ color: theme.colors.text.secondary }}
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
@@ -241,21 +279,56 @@ const Header: React.FC<HeaderProps> = ({ currentProject, onProjectChange }) => {
 
       {/* Right Section - Actions */}
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <span className={`w-2 h-2 rounded-full ${currentProjectData.status === 'active' ? 'bg-green-500' : 'bg-yellow-500'}`} />
+        <div className="flex items-center gap-2 text-sm" style={{ color: theme.colors.text.secondary }}>
+          <span 
+            className={`w-2 h-2 rounded-full`}
+            style={{ 
+              backgroundColor: currentProjectData.status === 'active' 
+                ? theme.colors.accent.success 
+                : theme.colors.accent.warning 
+            }}
+          />
           {currentProjectData.status === 'active' ? 'Auto-saved' : 'Draft'}
         </div>
 
+        {/* Theme Toggle Button */}
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-lg transition-colors hover:brightness-110"
+          style={{ backgroundColor: theme.colors.background.secondary }}
+          title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+        >
+          {isDark ? (
+            // Sun icon for light mode
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: theme.colors.text.primary }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          ) : (
+            // Moon icon for dark mode
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: theme.colors.text.primary }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          )}
+        </button>
+
         <button 
           onClick={() => setShowShareModal(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          className="px-4 py-2 rounded-lg transition-colors text-sm font-medium"
+          style={{ 
+            backgroundColor: theme.colors.accent.primary,
+            color: theme.colors.text.inverse
+          }}
         >
           Share
         </button>
 
         <button 
           onClick={() => setShowExportMenu(true)}
-          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+          className="px-4 py-2 rounded-lg transition-colors text-sm font-medium"
+          style={{ 
+            backgroundColor: theme.colors.background.secondary,
+            color: theme.colors.text.primary
+          }}
         >
           Export
         </button>
