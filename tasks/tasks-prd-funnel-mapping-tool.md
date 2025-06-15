@@ -85,6 +85,17 @@
     - [x] **Selection Visual**: Removed misaligned rectangles, added ring-based selection
     - [x] **Drag & Drop Fixed**: Added proper error handling and console logging
     - [x] **TypeScript Fixed**: Corrected drag event types and Canvas interfaces
+  - [x] 2.5 Final proportions and functionality corrections (FINAL FIX)
+    - [x] **Node Sizes Updated**: Funnel steps now 105x135px (as requested by user)
+    - [x] **Sidebar Width**: Increased to 220px for better spacing
+    - [x] **Grid Spacing**: Added proper 4px gaps between sidebar elements
+    - [x] **Grid Alignment**: Fixed 2x2 grid alignment with proper padding
+    - [x] **SVG Layer Positioning**: Fixed z-index hierarchy (base: 10, overlay: 20, label: 30)
+    - [x] **Drag & Drop Circular JSON Error**: Fixed by creating serializable drag data objects
+    - [x] **Selection Visual**: Proper separation of layers with correct spacing
+    - [x] **Icon Sizes**: Optimized to 32px in sidebar, 64px in canvas for better visibility
+    - [x] **Component Integration**: Updated MainAppClient.tsx to work with new interfaces
+    - [x] **TypeScript Errors**: Fixed all linter errors and type definitions
   - [x] 2.6 CRITICAL FIXES
     - [x] **Edges Animados**: Linhas pontilhadas azuis com animação contínua
     - [x] **Prevenção de Auto-conexão**: Nodes não podem se conectar a si mesmos
@@ -111,6 +122,26 @@
     - [x] **Pan & Zoom**: Controles de navegação melhorados
     - [x] **Node Extent**: Área limitada para evitar nodes perdidos
     - [x] **Mini Map**: Navegação visual do canvas
+  - [x] 2.7 Perfect SVG-Container Size Match
+    - [x] **ScreenIcon Resized**: Exact 105x135px dimensions
+    - [x] **Container Match**: Removed padding/borders for seamless appearance
+    - [x] **preserveAspectRatio**: Added "none" for perfect scaling
+    - [x] **Visual Unity**: SVG and container appear as single element
+  - [ ] 2.8 Fix Critical Connection and Visual Issues (PRIORITY 1)
+    - [ ] 2.8.1 Restore connection handles visibility and functionality
+    - [ ] 2.8.2 Fix node labels disappearing on canvas
+    - [ ] 2.8.3 Fix drag & drop functionality from sidebar to canvas
+  - [ ] 2.9 Enhance Inner SVG Content (PRIORITY 2)
+    - [ ] 2.9.1 Increase overlay icon size by 4x within screen boundaries
+    - [ ] 2.9.2 Ensure proper spacing and visual balance
+    - [ ] 2.9.3 Maintain responsive scaling
+  - [ ] 2.10 Implement Node Properties Panel (PRIORITY 3)
+    - [ ] 2.10.1 Create right sidebar panel component
+    - [ ] 2.10.2 Add node selection state management
+    - [ ] 2.10.3 Implement name editing functionality
+    - [ ] 2.10.4 Add color picker for node customization
+    - [ ] 2.10.5 Add connector direction toggle (horizontal/vertical)
+    - [ ] 2.10.6 Integrate panel with node selection events
 
 - [ ] 3.0 Add Mini Map for Canvas Navigation
   - [ ] 3.1 Implement a mini map component synchronized with the main canvas

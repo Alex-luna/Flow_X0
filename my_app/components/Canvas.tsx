@@ -71,30 +71,35 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
       event.preventDefault();
 
       if (!reactFlowWrapper.current || !reactFlowInstance) {
-        console.error('ReactFlow wrapper or instance not available');
+        console.error('❌ ReactFlow wrapper or instance not available');
         return;
       }
 
       try {
         const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-        const dragDataString = event.dataTransfer.getData('application/json');
+        
+        // Try both data formats for compatibility
+        let dragDataString = event.dataTransfer.getData('application/json');
+        if (!dragDataString) {
+          dragDataString = event.dataTransfer.getData('text/plain');
+        }
         
         if (!dragDataString) {
-          console.error('No drag data found');
+          console.error('❌ No drag data found in any format');
           return;
         }
 
         const dragData = JSON.parse(dragDataString);
-        console.log('Parsed drag data:', dragData);
+        console.log('🎯 Parsed drag data:', dragData);
 
         const position = reactFlowInstance.project({
           x: event.clientX - reactFlowBounds.left,
           y: event.clientY - reactFlowBounds.top,
         });
 
-        console.log('Drop position:', position);
+        console.log('📍 Drop position:', position);
 
-        // Create new node
+        // Create new node with proper data structure
         const newNode: Node = {
           id: `${dragData.type}-${Date.now()}`,
           type: 'custom',
@@ -106,10 +111,10 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           },
         };
 
-        console.log('Creating new node:', newNode);
+        console.log('✅ Creating new node:', newNode);
         setNodes((nds: Node[]) => nds.concat(newNode));
       } catch (error) {
-        console.error('Error handling drop:', error);
+        console.error('❌ Error handling drop:', error);
       }
     },
     [reactFlowInstance, setNodes]
@@ -130,7 +135,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
       },
     };
 
-    console.log('Adding node programmatically:', newNode);
+    console.log('✅ Adding node programmatically:', newNode);
     setNodes((nds: Node[]) => nds.concat(newNode));
   }, [setNodes]);
 
@@ -166,7 +171,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
         </div>
         
         <div className="text-sm text-gray-500">
-          Drag from sidebar or click to add nodes
+          🎯 Drag from sidebar or click to add nodes
         </div>
       </div>
 
@@ -191,6 +196,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           minZoom={0.5}
           maxZoom={2}
           nodeExtent={[[-1000, -1000], [2000, 2000]]}
+          connectionLineStyle={{ stroke: '#2563eb', strokeWidth: 2, strokeDasharray: '6 4' }}
         >
           <Controls />
           <MiniMap />

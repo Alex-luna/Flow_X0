@@ -128,6 +128,7 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, so
           }`}
           onDoubleClick={() => setEditing(true)}
           onKeyDown={handleKeyDown}
+          style={{ marginTop: '8px', marginBottom: '32px' }}
         >
           {/* SVG fills entire container - no spacing */}
           <div className="absolute inset-0 w-full h-full">
@@ -151,38 +152,48 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, so
             )}
           </div>
 
-          {/* Label container - positioned outside the SVG */}
-          <div className="absolute -bottom-6 left-0 right-0">
-            {editing ? (
-              <input
-                type="text"
-                value={label}
-                onChange={e => setLabel(e.target.value)}
-                onBlur={handleBlur}
-                onKeyDown={e => e.key === 'Enter' && handleBlur()}
-                className="w-full px-1 py-0.5 text-xs font-medium text-center bg-white border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                autoFocus
-              />
-            ) : (
-              <div className="px-1 py-0.5 text-xs font-medium text-gray-700 text-center bg-white/90 backdrop-blur-sm rounded border border-gray-200 truncate">
-                {label}
-              </div>
-            )}
-          </div>
-
-          {/* Connection handles - positioned on the SVG edges */}
+          {/* Connection handles - positioned on the SVG edges with proper z-index */}
           <Handle
             type="target"
             position={Position.Top}
             className="w-3 h-3 bg-blue-500 border-2 border-white"
-            style={{ top: '-6px' }}
+            style={{ 
+              top: '-8px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 1000
+            }}
           />
           <Handle
             type="source"
             position={Position.Bottom}
             className="w-3 h-3 bg-blue-500 border-2 border-white"
-            style={{ bottom: '-6px' }}
+            style={{ 
+              bottom: '-8px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 1000
+            }}
           />
+        </div>
+
+        {/* Label container - positioned outside the SVG with proper visibility */}
+        <div className="absolute -bottom-6 left-0 right-0 z-50">
+          {editing ? (
+            <input
+              type="text"
+              value={label}
+              onChange={e => setLabel(e.target.value)}
+              onBlur={handleBlur}
+              onKeyDown={e => e.key === 'Enter' && handleBlur()}
+              className="w-full px-1 py-0.5 text-xs font-medium text-center bg-white border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+              autoFocus
+            />
+          ) : (
+            <div className="px-1 py-0.5 text-xs font-medium text-gray-700 text-center bg-white/90 backdrop-blur-sm rounded border border-gray-200 truncate shadow-sm">
+              {label}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -228,11 +239,13 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, so
           type="target"
           position={Position.Left}
           className="w-2 h-2 bg-blue-500 border border-white"
+          style={{ zIndex: 1000 }}
         />
         <Handle
           type="source"
           position={Position.Right}
           className="w-2 h-2 bg-blue-500 border border-white"
+          style={{ zIndex: 1000 }}
         />
       </div>
     </div>
