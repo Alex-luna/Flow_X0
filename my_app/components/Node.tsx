@@ -1,3 +1,5 @@
+"use client";
+
 import React, { memo, useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import ComposedBlockIcon from './ComposedBlockIcon';

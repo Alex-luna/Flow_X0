@@ -1,3 +1,5 @@
+"use client";
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export interface Theme {
@@ -48,45 +50,45 @@ export interface Theme {
   };
 }
 
-// Monokai/Dracula inspired dark theme
+// Enhanced dark theme based on UX Color Guide
 const darkTheme: Theme = {
   name: 'dark',
   colors: {
     background: {
-      primary: '#282a36',     // Dracula background
-      secondary: '#44475a',   // Dracula current line
-      tertiary: '#6272a4',    // Dracula comment
-      elevated: '#343746',    // Darker elevated surfaces
+      primary: '#1A202C',     // Background Principal
+      secondary: '#141924',   // Background Sidebar (mais escuro)
+      tertiary: '#2D3748',    // Background Canvas
+      elevated: '#232A3A',    // Background Cards/Modals
     },
     text: {
-      primary: '#f8f8f2',     // Dracula foreground
-      secondary: '#f8f8f2e6', // Slightly transparent
-      tertiary: '#6272a4',    // Dracula comment
-      inverse: '#282a36',     // Dark text for light backgrounds
+      primary: '#F5F7FA',     // Texto Principal (Branco Suave)
+      secondary: '#A0AEC0',   // Texto Secundário (Cinza Claro)
+      tertiary: '#718096',    // Texto Terciário (Cinza Médio)
+      inverse: '#1A202C',     // Texto escuro para fundos claros
     },
     border: {
-      primary: '#44475a',     // Dracula current line
-      secondary: '#6272a4',   // Dracula comment
-      focus: '#8be9fd',       // Dracula cyan
+      primary: '#2D3748',     // Bordas sutis
+      secondary: '#4A5568',   // Bordas mais evidentes
+      focus: '#D73120',       // Flow X red para focus
     },
     accent: {
-      primary: '#8be9fd',     // Dracula cyan
-      secondary: '#bd93f9',   // Dracula purple
-      success: '#50fa7b',     // Dracula green
-      warning: '#f1fa8c',     // Dracula yellow
-      danger: '#ff5555',      // Dracula red
+      primary: '#D73120',     // Vermelho Principal da marca
+      secondary: '#C32D1C',   // Vermelho Hover
+      success: '#38B25D',     // Verde Dark
+      warning: '#EC9E24',     // Âmbar Dark
+      danger: '#D73120',      // Vermelho da marca para perigo
     },
     node: {
-      background: '#44475a',
-      border: '#6272a4',
-      selected: '#8be9fd',
-      hover: '#50fa7b',
+      background: '#232A3A',  // Cards/Modals background
+      border: '#2D3748',      // Bordas sutis
+      selected: '#D73120',    // Vermelho da marca
+      hover: '#C32D1C',       // Vermelho hover
     },
     canvas: {
-      background: '#282a36',
-      grid: '#44475a',
-      edge: '#8be9fd',
-      edgeSelected: '#ff5555',
+      background: '#2D3748',  // Background Canvas
+      grid: '#4A5568',        // Grid mais sutil
+      edge: '#D73120',        // Vermelho da marca
+      edgeSelected: '#C32D1C', // Vermelho hover
     },
   },
 };
@@ -113,22 +115,22 @@ const lightTheme: Theme = {
       focus: '#3b82f6',
     },
     accent: {
-      primary: '#3b82f6',
-      secondary: '#8b5cf6',
-      success: '#10b981',
-      warning: '#f59e0b',
-      danger: '#ef4444',
+      primary: '#D73120',     // Flow X red
+      secondary: '#3b82f6',   // Blue
+      success: '#10b981',     // Green
+      warning: '#f59e0b',     // Orange
+      danger: '#ef4444',      // Red
     },
     node: {
       background: '#ffffff',
       border: '#e2e8f0',
-      selected: '#3b82f6',
+      selected: '#D73120',    // Flow X red
       hover: '#10b981',
     },
     canvas: {
       background: '#ffffff',
       grid: '#f1f5f9',
-      edge: '#3b82f6',
+      edge: '#D73120',        // Flow X red
       edgeSelected: '#ef4444',
     },
   },

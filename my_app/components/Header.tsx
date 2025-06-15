@@ -1,7 +1,10 @@
+"use client";
+
 import React, { useState } from 'react';
 import ExportMenu from './ExportMenu';
 import ShareModal from './ShareModal';
 import { useTheme } from '../contexts/ThemeContext';
+import FlowXIcon from './logos/FlowXIcon';
 
 interface Project {
   id: string;
@@ -139,23 +142,11 @@ const Header: React.FC<HeaderProps> = ({ currentProject, onProjectChange }) => {
       {/* Left Section - Brand and Project */}
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">
-          <div 
-            className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: theme.colors.accent.primary }}
-          >
-            <span 
-              className="font-bold text-sm"
-              style={{ color: theme.colors.text.inverse }}
-            >
-              FX
-            </span>
-          </div>
-          <h1 
-            className="text-xl font-semibold"
-            style={{ color: theme.colors.text.primary }}
-          >
-            Flow X
-          </h1>
+          <FlowXIcon 
+            width={32} 
+            height={31} 
+            className="shrink-0"
+          />
         </div>
 
         <div 

@@ -4,9 +4,8 @@ import React from "react";
 
 const Canvas = dynamic(() => import("./Canvas"), { ssr: false });
 
-export default function CanvasClient({ sidebarClickedBlock, onSidebarBlockConsumed }: {
-  sidebarClickedBlock?: any;
-  onSidebarBlockConsumed?: () => void;
+export default function CanvasClient({ onAddNode }: {
+  onAddNode: (type: string, position?: { x: number; y: number }) => void;
 }) {
-  return <Canvas sidebarClickedBlock={sidebarClickedBlock} onSidebarBlockConsumed={onSidebarBlockConsumed} />;
+  return <Canvas onAddNode={onAddNode} />;
 } 

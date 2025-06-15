@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useCallback, useRef, useState } from 'react';
 import ReactFlow, {
   Node,
@@ -18,36 +20,22 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 
 import CustomNode from './Node';
+import { useTheme } from '../contexts/ThemeContext';
 
 const nodeTypes = {
   custom: CustomNode,
 };
 
-// Animated edge style: dashed and animated
-const animatedEdgeStyle = {
-  stroke: '#2563eb',
-  strokeWidth: 2,
-  strokeDasharray: '6 4',
-};
+// Edge styles will be dynamically generated based on theme
 
-const selectedEdgeStyle = {
-  stroke: '#ef4444', // red color for selected
-  strokeWidth: 3,
-  strokeDasharray: '6 4',
-};
-
-const edgeOptions = {
-  animated: true,
-  style: animatedEdgeStyle,
-  focusable: true,
-  deletable: true,
-};
+  // Edge options will be created dynamically inside component
 
 interface CanvasProps {
   onAddNode: (type: string, position?: { x: number; y: number }) => void;
 }
 
 const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
+  const { theme, isDark } = useTheme();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange]: [Node[], any, OnNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange]: [Edge[], any, OnEdgesChange] = useEdgesState([]);
@@ -62,6 +50,26 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
   }>({ show: false, x: 0, y: 0, edgeId: null });
   const [showMiniMap, setShowMiniMap] = useState(true);
 
+  // Dynamic edge styles based on theme
+  const animatedEdgeStyle = {
+    stroke: theme.colors.canvas.edge,
+    strokeWidth: 2,
+    strokeDasharray: '6 4',
+  };
+
+  const selectedEdgeStyle = {
+    stroke: theme.colors.canvas.edgeSelected,
+    strokeWidth: 3,
+    strokeDasharray: '6 4',
+  };
+
+  const edgeOptions = {
+    animated: true,
+    style: animatedEdgeStyle,
+    focusable: true,
+    deletable: true,
+  };
+
   const onConnect: OnConnect = useCallback(
     (params: Connection) => {
       // Prevent self-connections
@@ -74,7 +82,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
         return addEdge({ ...params, ...edgeOptions }, eds);
       });
     },
-    [setEdges]
+    [setEdges, edgeOptions]
   );
 
   // Handle edge click - select edge for deletion
@@ -311,11 +319,21 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
   return (
     <div className="w-full h-full flex flex-col">
       {/* Controls Bar */}
-      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+      <div 
+        className="flex items-center justify-between p-4 border-b"
+        style={{ 
+          backgroundColor: theme.colors.background.elevated,
+          borderColor: theme.colors.border.primary
+        }}
+      >
         <div className="flex items-center gap-4">
           <button
             onClick={() => handleAddNode('generic')}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm font-medium"
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:brightness-110"
+            style={{
+              backgroundColor: theme.colors.accent.primary,
+              color: theme.colors.text.inverse
+            }}
           >
             Add Node
           </button>
@@ -327,33 +345,46 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
               console.log('🧪 Test Button: Current nodes:', nodes.length);
               handleAddNode('test');
             }}
-            className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm font-medium"
+            className="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:brightness-110"
+            style={{
+              backgroundColor: theme.colors.accent.success,
+              color: theme.colors.text.inverse
+            }}
           >
             Test
           </button>
           
-          <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
+          <label 
+            className="flex items-center gap-2 cursor-pointer select-none text-sm"
+            style={{ color: theme.colors.text.primary }}
+          >
             <input
               type="checkbox"
               checked={snapToGrid}
               onChange={e => setSnapToGrid(e.target.checked)}
-              className="accent-blue-600"
+              style={{ accentColor: theme.colors.accent.primary }}
             />
             Snap to Grid
           </label>
 
-          <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
+          <label 
+            className="flex items-center gap-2 cursor-pointer select-none text-sm"
+            style={{ color: theme.colors.text.primary }}
+          >
             <input
               type="checkbox"
               checked={showMiniMap}
               onChange={e => setShowMiniMap(e.target.checked)}
-              className="accent-blue-600"
+              style={{ accentColor: theme.colors.accent.primary }}
             />
             Show Mini Map
           </label>
         </div>
         
-        <div className="text-sm text-gray-500">
+        <div 
+          className="text-sm"
+          style={{ color: theme.colors.text.secondary }}
+        >
           🎯 Drag from sidebar | Space+Drag to pan | Right-click drag to pan | Scroll to zoom
         </div>
       </div>
@@ -388,29 +419,34 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           minZoom={0.5}
           maxZoom={2}
           nodeExtent={[[-1000, -1000], [2000, 2000]]}
-          connectionLineStyle={{ stroke: '#2563eb', strokeWidth: 2, strokeDasharray: '6 4' }}
+          connectionLineStyle={{ 
+            stroke: theme.colors.canvas.edge, 
+            strokeWidth: 2, 
+            strokeDasharray: '6 4' 
+          }}
           deleteKeyCode={['Delete', 'Backspace']}
           onlyRenderVisibleElements={false}
           preventScrolling={false}
+          style={{ backgroundColor: theme.colors.canvas.background }}
         >
           <Controls />
           {showMiniMap && (
             <MiniMap 
               nodeColor={(node) => {
                 if (node.data.type && node.data.type !== 'generic') {
-                  return '#6366F1'; // Blue for funnel steps
+                  return theme.colors.accent.primary; // Brand red for funnel steps
                 }
-                return node.data.color || '#6366F1';
+                return node.data.color || theme.colors.accent.primary;
               }}
-              nodeStrokeColor="#ffffff"
+              nodeStrokeColor={theme.colors.text.primary}
               nodeStrokeWidth={2}
               nodeBorderRadius={8}
-              maskColor="rgba(0, 0, 0, 0.1)"
+              maskColor={isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"}
               style={{
-                backgroundColor: 'white',
-                border: '1px solid #e5e7eb',
+                backgroundColor: theme.colors.background.elevated,
+                border: `1px solid ${theme.colors.border.primary}`,
                 borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)',
               }}
               position="bottom-right"
               pannable
@@ -418,23 +454,39 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
               ariaLabel="Canvas mini map for navigation"
             />
           )}
-          <Background gap={16} />
+          <Background 
+            gap={16} 
+            color={theme.colors.canvas.grid}
+            style={{ backgroundColor: theme.colors.canvas.background }}
+          />
         </ReactFlow>
         
         {/* Context Menu */}
         {contextMenu.show && (
           <div
-            className="fixed bg-white border border-gray-200 rounded-lg shadow-lg z-[10000] py-1"
+            className="fixed rounded-lg shadow-lg z-[10000] py-1"
             style={{
               left: contextMenu.x,
               top: contextMenu.y,
+              backgroundColor: theme.colors.background.elevated,
+              border: `1px solid ${theme.colors.border.primary}`,
+              boxShadow: '0 10px 25px -3px rgba(0, 0, 0, 0.3)',
             }}
           >
             <button
               onClick={handleContextMenuDelete}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors rounded-lg"
+              style={{
+                color: theme.colors.accent.danger,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = theme.colors.background.secondary;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
             >
-              <span className="text-red-500">🗑️</span>
+              <span style={{ color: theme.colors.accent.danger }}>🗑️</span>
               Delete Connection
             </button>
           </div>
