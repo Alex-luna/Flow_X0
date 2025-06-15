@@ -60,6 +60,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     y: number;
     edgeId: string | null;
   }>({ show: false, x: 0, y: 0, edgeId: null });
+  const [showMiniMap, setShowMiniMap] = useState(true);
 
   const onConnect: OnConnect = useCallback(
     (params: Connection) => {
@@ -295,6 +296,18 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     }));
   }, [edges, selectedEdges]);
 
+  // Handle window resize for MiniMap responsiveness
+  React.useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      setShowMiniMap(!isMobile);
+    };
+    
+    handleResize(); // Check initial size
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div className="w-full h-full flex flex-col">
       {/* Controls Bar */}
@@ -327,6 +340,16 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
               className="accent-blue-600"
             />
             Snap to Grid
+          </label>
+
+          <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
+            <input
+              type="checkbox"
+              checked={showMiniMap}
+              onChange={e => setShowMiniMap(e.target.checked)}
+              className="accent-blue-600"
+            />
+            Show Mini Map
           </label>
         </div>
         
@@ -371,7 +394,30 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           preventScrolling={false}
         >
           <Controls />
-          <MiniMap />
+          {showMiniMap && (
+            <MiniMap 
+              nodeColor={(node) => {
+                if (node.data.type && node.data.type !== 'generic') {
+                  return '#6366F1'; // Blue for funnel steps
+                }
+                return node.data.color || '#6366F1';
+              }}
+              nodeStrokeColor="#ffffff"
+              nodeStrokeWidth={2}
+              nodeBorderRadius={8}
+              maskColor="rgba(0, 0, 0, 0.1)"
+              style={{
+                backgroundColor: 'white',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+              }}
+              position="bottom-right"
+              pannable
+              zoomable
+              ariaLabel="Canvas mini map for navigation"
+            />
+          )}
           <Background gap={16} />
         </ReactFlow>
         

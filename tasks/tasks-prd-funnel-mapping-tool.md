@@ -22,7 +22,7 @@
 
 - [x] 1.0 Implement Infinite Canvas and Node System
 - [x] 2.0 Build Sidebar with Draggable/Clickable Blocks
-- [ ] 3.0 Add Mini Map for Canvas Navigation
+- [x] 3.0 Add Mini Map for Canvas Navigation
 - [ ] 4.0 Create Header with Project/Folder Mock Management
 - [ ] 5.0 Implement Export, Import, and Share Functionality
 - [ ] 6.0 Implement Data Persistency (Local Storage)
@@ -148,10 +148,10 @@
     - [ ] 2.11.5 Add connector direction toggle (horizontal/vertical)
     - [ ] 2.11.6 Integrate panel with node selection events
 
-- [ ] 3.0 Add Mini Map for Canvas Navigation
-  - [ ] 3.1 Implement a mini map component synchronized with the main canvas
-  - [ ] 3.2 Allow navigation and zoom via the mini map
-  - [ ] 3.3 Ensure responsiveness and accessibility
+- [x] 3.0 Add Mini Map for Canvas Navigation
+  - [x] 3.1 Implement a mini map component synchronized with the main canvas
+  - [x] 3.2 Allow navigation and zoom via the mini map
+  - [x] 3.3 Ensure responsiveness and accessibility
 
 - [ ] 4.0 Create Header with Project/Folder Mock Management
   - [ ] 4.1 Implement header layout and navigation
