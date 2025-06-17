@@ -27,6 +27,8 @@
 - [x] 4.0 Create Header with Project/Folder Mock Management
 - [x] 5.0 Implement Export, Import, and Share Functionality
 - [x] 6.0 Implement Data Persistency (Local Storage)
+- [ ] 7.0 UI/UX Improvements and Dark Mode Implementation
+- [ ] 8.0 Enhanced Branding and Dark Theme Overhaul
 
 ---
 
@@ -194,6 +196,32 @@
     - [ ] 7.3.2 Add subtle animations and transitions
     - [ ] 7.3.3 Enhance icons and visual hierarchy
     - [ ] 7.3.4 Polish overall aesthetic consistency
+
+- [ ] 8.0 Enhanced Branding and Dark Theme Overhaul
+  - [x] 8.1 Replace Current Logo with Official SVG Assets
+    - [x] 8.1.1 Copy SVG logos from /Assets/logos to components
+    - [x] 8.1.2 Create React components for flowX_logo.svg and Flow_x_logo_Fav_Icon.svg
+    - [x] 8.1.3 Replace text-based logo in Header with SVG logo component
+    - [ ] 8.1.4 Update favicon with official icon
+  - [x] 8.2 Implement Splash Screen with Animated Logo
+    - [x] 8.2.1 Create SplashScreen component with logo glow animation
+    - [x] 8.2.2 Add CSS animations for logo entrance and glow effects
+    - [x] 8.2.3 Implement auto-close timer and fade transition to main app
+    - [x] 8.2.4 Integrate splash screen with app initialization
+  - [x] 8.3 Enhanced Dark Theme with Complementary Colors
+    - [x] 8.3.1 Redesign color palette with darker greys (closer to black)
+    - [x] 8.3.2 Create complementary colors for red X accent (#D73120)
+    - [x] 8.3.3 Update ThemeContext with new enhanced dark theme
+    - [ ] 8.3.4 Apply new colors to all components (Canvas, Header, Sidebar, Modals)
+    - [ ] 8.3.5 Ensure proper contrast and accessibility compliance
+  - [x] 8.4 Implement Enhanced UX Color Palette (Based on Color Guide)
+    - [x] 8.4.1 Update ThemeContext with optimized dark theme colors
+    - [x] 8.4.2 Replace heavy red (#D73120) with softer coral (#FE5F55) for UI elements
+    - [x] 8.4.3 Add complementary colors (green #6EEB83, orange #FFAE03) from user palette
+    - [x] 8.4.4 Fix edge connection confusion: green for normal, red only for delete
+    - [x] 8.4.5 Keep original red (#D73120) only for logo and danger states
+    - [x] 8.4.6 Apply changes to both light and dark themes
+    - [ ] 8.4.7 Test accessibility and contrast ratios with new colors
 
 ---
 
