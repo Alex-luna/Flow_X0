@@ -16,11 +16,14 @@ import ReactFlow, {
   OnNodesChange,
   OnEdgesChange,
   ReactFlowInstance,
+  applyNodeChanges,
+  applyEdgeChanges,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
 import CustomNode from './Node';
 import { useTheme } from '../contexts/ThemeContext';
+import { useCanvasSync } from '../hooks/useCanvasSync';
 
 const nodeTypes = {
   custom: CustomNode,
@@ -37,9 +40,32 @@ interface CanvasProps {
 const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
   const { theme, isDark } = useTheme();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const [nodes, setNodes, onNodesChange]: [Node[], any, OnNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange]: [Edge[], any, OnEdgesChange] = useEdgesState([]);
+  
+  // Use Convex sync hook for canvas data
+  const {
+    nodes,
+    edges,
+    viewport,
+    setNodes,
+    setEdges,
+    setViewport,
+    isLoading,
+    isLoaded,
+    lastSaveTime,
+    manualSave,
+    hasUnsavedChanges,
+  } = useCanvasSync();
+  
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
+  
+  // Create ReactFlow-compatible change handlers using applyNodeChanges and applyEdgeChanges
+  const onNodesChange: OnNodesChange = useCallback((changes) => {
+    setNodes((nds) => applyNodeChanges(changes, nds));
+  }, [setNodes]);
+  
+  const onEdgesChange: OnEdgesChange = useCallback((changes) => {
+    setEdges((eds) => applyEdgeChanges(changes, eds));
+  }, [setEdges]);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [selectedEdges, setSelectedEdges] = useState<string[]>([]);
   const [contextMenu, setContextMenu] = useState<{
@@ -304,6 +330,8 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     }));
   }, [edges, selectedEdges]);
 
+  // TODO: Add viewport sync when ReactFlow 12 is available with onViewportChange
+
   // Handle window resize for MiniMap responsiveness
   React.useEffect(() => {
     const handleResize = () => {
@@ -381,11 +409,41 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           </label>
         </div>
         
-        <div 
-          className="text-sm"
-          style={{ color: theme.colors.text.secondary }}
-        >
-          🎯 Drag from sidebar | Space+Drag to pan | Right-click drag to pan | Scroll to zoom
+        <div className="flex items-center gap-4">
+          <div 
+            className="text-sm"
+            style={{ color: theme.colors.text.secondary }}
+          >
+            🎯 Drag from sidebar | Space+Drag to pan | Right-click drag to pan | Scroll to zoom
+          </div>
+          
+          {/* Loading and Save Status */}
+          {isLoading && (
+            <div className="flex items-center gap-2 text-sm" style={{ color: theme.colors.text.secondary }}>
+              <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full"></div>
+              Loading...
+            </div>
+          )}
+          
+          {!isLoading && lastSaveTime && (
+            <div className="flex items-center gap-2 text-sm" style={{ color: theme.colors.accent.success }}>
+              <span>💾</span>
+              Saved {hasUnsavedChanges ? '(unsaved changes)' : 'automatically'}
+            </div>
+          )}
+          
+          {!isLoading && !isLoaded && (
+            <button
+              onClick={manualSave}
+              className="px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 hover:brightness-110"
+              style={{
+                backgroundColor: theme.colors.accent.warning,
+                color: theme.colors.text.inverse
+              }}
+            >
+              Manual Save
+            </button>
+          )}
         </div>
       </div>
 
@@ -407,6 +465,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           onEdgeContextMenu={onEdgeContextMenu}
           onPaneClick={onPaneClick}
           onInit={setReactFlowInstance}
+
           nodeTypes={nodeTypes}
           fitView
           snapToGrid={snapToGrid}
