@@ -11,19 +11,18 @@ export default function AdminPanel() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  // TODO: Enable when Convex API is generated
-  // const seedDatabase = useMutation(api.seedData.seedDatabase);
-  // const clearDatabase = useMutation(api.seedData.clearDatabase);
-  // const getDatabaseStats = useMutation(api.seedData.getDatabaseStats);
+  const seedDatabase = useMutation(api.seedData.seedDatabase);
+  const clearDatabase = useMutation(api.seedData.clearDatabase);
+  const getDatabaseStats = useMutation(api.seedData.getDatabaseStats);
 
   const handleSeedDatabase = async () => {
     setIsLoading(true);
     setMessage('');
     
     try {
-      // Mock seeding for now
-      setMessage(`✅ Mock: Database seeded with sample data`);
-      console.log('🌱 Mock seeding completed');
+      const result = await seedDatabase({});
+      setMessage(`✅ ${result.message}`);
+      console.log('🌱 Seeding result:', result);
     } catch (error) {
       setMessage(`❌ Error: ${error}`);
       console.error('❌ Seeding error:', error);
@@ -41,9 +40,9 @@ export default function AdminPanel() {
     setMessage('');
     
     try {
-      // Mock clearing for now
-      setMessage(`🗑️ Mock: Database cleared`);
-      console.log('🗑️ Mock clearing completed');
+      const result = await clearDatabase({});
+      setMessage(`🗑️ ${result.message}`);
+      console.log('🗑️ Clear result:', result);
     } catch (error) {
       setMessage(`❌ Error: ${error}`);
       console.error('❌ Clear error:', error);
@@ -57,9 +56,9 @@ export default function AdminPanel() {
     setMessage('');
     
     try {
-      // Mock stats for now
-      setMessage(`📊 Mock Stats: 4 folders, 12 projects, 12 flows, 9 nodes, 6 edges`);
-      console.log('📊 Mock stats completed');
+      const stats = await getDatabaseStats({});
+      setMessage(`📊 Database Stats: ${stats.folders} folders, ${stats.projects} projects, ${stats.flows} flows, ${stats.nodes} nodes, ${stats.edges} edges`);
+      console.log('📊 Database stats:', stats);
     } catch (error) {
       setMessage(`❌ Error: ${error}`);
       console.error('❌ Stats error:', error);

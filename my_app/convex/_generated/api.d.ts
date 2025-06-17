@@ -15,6 +15,7 @@ import type {
 } from "convex/server";
 import type * as flows from "../flows.js";
 import type * as projects from "../projects.js";
+import type * as seedData from "../seedData.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -27,6 +28,7 @@ import type * as projects from "../projects.js";
 declare const fullApi: ApiFromModules<{
   flows: typeof flows;
   projects: typeof projects;
+  seedData: typeof seedData;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

@@ -5,7 +5,7 @@ import { ReactNode } from "react";
 
 // Create the Convex client
 const convex = new ConvexReactClient(
-  process.env.NEXT_PUBLIC_CONVEX_URL || "https://friendly-bee-123.convex.cloud"
+  process.env.NEXT_PUBLIC_CONVEX_URL!
 );
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {

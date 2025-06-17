@@ -11,6 +11,12 @@
 - `components/icons/` - Diretório com todos os 16 ícones SVG convertidos para React components.
 - `lib/utils/canvasHelpers.ts` - Funções utilitárias para manipulação do canvas e serialização/deserialização de fluxos.
 - `lib/utils/jsonSchema.ts` - Schema e helpers para exportação/importação JSON (compatível com n8n).
+- `convex/schema.ts` - Schema do banco de dados Convex para projetos, flows, nodes e edges.
+- `convex/projects.ts` - Mutations e queries para gerenciamento de projetos.
+- `convex/flows.ts` - Mutations e queries para salvar/carregar flows (nodes e edges).
+- `hooks/useConvex.ts` - Hook personalizado para integração com Convex backend.
+- `hooks/useAutoSave.ts` - Hook para auto-save com debouncing.
+- `contexts/ProjectContext.tsx` - Context para gerenciamento de estado do projeto atual.
 - `styles/` - Estilos globais e de componentes (Tailwind ou shadcn/ui).
 - `app/MainAppClient.tsx` - Componente principal da aplicação integrando Header, Sidebar e Canvas com estado de projeto.
 
@@ -168,11 +174,15 @@
   - [x] 5.4 Implement share modal for mock URL sharing
   - [x] 5.5 Handle export/import errors and edge cases (empty canvas, invalid JSON)
 
-- [ ] 6.0 Implement Data Persistency (Local Storage)
-  - [ ] 6.1 Save current flow/project state to local storage automatically
-  - [ ] 6.2 Load last opened flow/project from local storage on app start
-  - [ ] 6.3 Provide UI feedback for save/load actions
-  - [ ] 6.4 Add option to reset/clear local storage data
+- [x] 6.0 Implement Data Persistency with Convex Backend
+  - [x] 6.1 Setup Convex Schema for Projects, Flows, Nodes and Edges
+  - [x] 6.2 Implement Convex mutations for saving/updating project data
+  - [x] 6.3 Implement Convex queries for loading project data
+  - [x] 6.4 Integrate real-time synchronization in Canvas component
+  - [x] 6.5 Add auto-save functionality with debouncing
+  - [x] 6.6 Implement project management with Convex backend
+  - [x] 6.7 Add loading states and error handling for backend operations
+  - [x] 6.8 Migrate existing mock data to Convex database
 
 - [ ] 7.0 UI/UX Improvements and Dark Mode Implementation
   - [x] 7.1 Fix Layout Issues
