@@ -14,9 +14,22 @@
 - `convex/schema.ts` - Schema do banco de dados Convex para projetos, flows, nodes e edges.
 - `convex/projects.ts` - Mutations e queries para gerenciamento de projetos.
 - `convex/flows.ts` - Mutations e queries para salvar/carregar flows (nodes e edges).
+- `convex/folders.ts` - Convex functions for folder management and project associations (NEW)
 - `hooks/useConvex.ts` - Hook personalizado para integração com Convex backend.
-- `hooks/useAutoSave.ts` - Hook para auto-save com debouncing.
+- `hooks/useCanvasSync.ts` - Hook para auto-save com debouncing e sincronização canvas-Convex.
+- `hooks/useProjects.ts` - Custom hook for project management with Convex integration (NEW)
+- `hooks/useFolders.ts` - Custom hook for folder management with real-time updates (NEW)
 - `contexts/ProjectContext.tsx` - Context para gerenciamento de estado do projeto atual.
+- `contexts/ConvexProvider.tsx` - Wrapper para Convex client com configuração adequada.
+- `components/modals/CreateFolderModal.tsx` - Modal for creating new folders with validation (NEW)
+- `components/modals/CreateProjectModal.tsx` - Modal for creating new projects with folder selection (NEW)
+- `components/modals/EditProjectModal.tsx` - Modal for editing existing project details (NEW)
+- `components/modals/DeleteConfirmModal.tsx` - Confirmation modal for delete operations (NEW)
+- `components/ProjectDropdown.tsx` - Refactored dropdown with real data and proper styling (NEW)
+- `components/ProjectList.tsx` - List component for displaying projects with filters and actions (NEW)
+- `components/FolderTabs.tsx` - Folder navigation tabs with real data and counts (NEW)
+- `lib/utils/projectHelpers.ts` - Utility functions for project operations and validation (NEW)
+- `lib/utils/folderHelpers.ts` - Utility functions for folder operations and color management (NEW)
 - `styles/` - Estilos globais e de componentes (Tailwind ou shadcn/ui).
 - `app/MainAppClient.tsx` - Componente principal da aplicação integrando Header, Sidebar e Canvas com estado de projeto.
 
@@ -24,6 +37,10 @@
 
 - Unit tests should typically be placed alongside the code files they are testing (e.g., `MyComponent.tsx` and `MyComponent.test.tsx` in the same directory).
 - Use `npx jest [optional/path/to/test/file]` to run tests. Running without a path executes all tests found by the Jest configuration.
+- All NEW components will use Convex real-time queries for automatic updates
+- Implement proper loading states and error handling throughout
+- Use optimistic updates where appropriate for better UX
+- Follow existing design system and theme integration
 
 ## Tasks
 
@@ -32,9 +49,13 @@
 - [x] 3.0 Add Mini Map for Canvas Navigation
 - [x] 4.0 Create Header with Project/Folder Mock Management
 - [x] 5.0 Implement Export, Import, and Share Functionality
-- [x] 6.0 Implement Data Persistency (Local Storage)
+- [x] 6.0 Implement Data Persistency with Convex Backend
 - [ ] 7.0 UI/UX Improvements and Dark Mode Implementation
 - [ ] 8.0 Enhanced Branding and Dark Theme Overhaul
+- [ ] 9.0 Implement Real Project and Folder Management System
+- [ ] 10.0 Create Advanced Project Management Features
+- [ ] 11.0 Implement Project Import/Export and Collaboration
+- [ ] 12.0 Add Comprehensive Error Handling and Performance Optimization
 
 ---
 
@@ -233,50 +254,89 @@
     - [x] 8.4.6 Apply changes to both light and dark themes
     - [ ] 8.4.7 Test accessibility and contrast ratios with new colors
 
----
+- [ ] 9.0 Implement Real Project and Folder Management System
+  - [ ] 9.1 Update Convex Backend for Real Project/Folder Management
+    - [ ] 9.1.1 Update convex/schema.ts with proper folder and project relationships
+    - [ ] 9.1.2 Create convex/folders.ts with CRUD mutations and queries
+    - [ ] 9.1.3 Update convex/projects.ts with folder relationships and advanced queries
+    - [ ] 9.1.4 Add validation functions for folder names and project data
+    - [ ] 9.1.5 Create database indexes for efficient querying by folder and status
+    - [ ] 9.1.6 Implement soft delete functionality for projects and folders
+  - [ ] 9.2 Create Project and Folder Management Hooks
+    - [ ] 9.2.1 Create hooks/useFolders.ts with real-time folder management
+    - [ ] 9.2.2 Update hooks/useProjects.ts with folder filtering and advanced queries
+    - [ ] 9.2.3 Implement optimistic updates for better UX in both hooks
+    - [ ] 9.2.4 Add error handling and retry logic for failed operations
+    - [ ] 9.2.5 Create useProjectSync hook for canvas-project synchronization
+    - [ ] 9.2.6 Add loading states and caching mechanisms
+  - [ ] 9.3 Build Complete Modal System for CRUD Operations
+    - [ ] 9.3.1 Create components/modals/ directory structure
+    - [ ] 9.3.2 Build CreateFolderModal with name validation and color picker
+    - [ ] 9.3.3 Build CreateProjectModal with folder selection and template options
+    - [ ] 9.3.4 Build EditProjectModal with all project properties
+    - [ ] 9.3.5 Build DeleteConfirmModal with warning messages and confirmation
+    - [ ] 9.3.6 Fix modal positioning and prevent element overflow
+    - [ ] 9.3.7 Add keyboard navigation and accessibility features
+    - [ ] 9.3.8 Implement modal state management and proper cleanup
+  - [ ] 9.4 Implement Real Project Selection and Canvas Integration
+    - [ ] 9.4.1 Update ProjectContext to use real Convex data
+    - [ ] 9.4.2 Implement canvas data loading based on selected project
+    - [ ] 9.4.3 Create project switching functionality with auto-save
+    - [ ] 9.4.4 Update Canvas component to respond to project changes
+    - [ ] 9.4.5 Implement canvas reset when switching projects
+    - [ ] 9.4.6 Add loading indicators during project switching
+    - [ ] 9.4.7 Handle edge cases like deleted projects and access errors
 
-I have generated the high-level tasks based on the PRD. Ready to generate the sub-tasks? Respond with 'Go' to proceed.
+- [ ] 10.0 Create Advanced Project Management Features
+  - [ ] 10.1 Implement Advanced Search and Filtering
+    - [ ] 10.1.1 Implement project search functionality
+    - [ ] 10.1.2 Add project sorting by date, name, and status
+    - [ ] 10.1.3 Create project status management (active, draft, archived)
+    - [ ] 10.1.4 Add project filtering by folder and multiple criteria
+  - [ ] 10.2 Project Operations and Management
+    - [ ] 10.2.1 Implement project duplication feature
+    - [ ] 10.2.2 Add project statistics and metadata display
+    - [ ] 10.2.3 Create bulk operations for multiple projects
+    - [ ] 10.2.4 Implement project favorites and recent projects
+  - [ ] 10.3 Templates and Quick-Start Features
+    - [ ] 10.3.1 Add project templates and quick-start options
+    - [ ] 10.3.2 Create predefined funnel templates (Lead Gen, Sales, etc.)
+    - [ ] 10.3.3 Implement template preview and selection system
+    - [ ] 10.3.4 Add custom template creation and sharing
 
-**Task 2.6 CRITICAL FIXES Completion Summary:**
-✅ **Todas as Funcionalidades Essenciais Restauradas e Melhoradas**
+- [ ] 11.0 Implement Project Import/Export and Collaboration
+  - [ ] 11.1 Enhanced Export/Import System
+    - [ ] 11.1.1 Create project export functionality with complete data
+    - [ ] 11.1.2 Implement project import with validation and conflict resolution
+    - [ ] 11.1.3 Add project sharing via URL generation
+    - [ ] 11.1.4 Create project backup and restore system
+  - [ ] 11.2 Collaboration and Versioning
+    - [ ] 11.2.1 Implement project versioning and history
+    - [ ] 11.2.2 Add collaboration features preparation
+    - [ ] 11.2.3 Create project analytics and usage tracking
+    - [ ] 11.2.4 Implement project access control and permissions
+  - [ ] 11.3 Data Migration and Seed Enhancement
+    - [ ] 11.3.1 Update convex/seedData.ts with realistic folder and project data
+    - [ ] 11.3.2 Create migration functions for existing mock data
+    - [ ] 11.3.3 Implement data consistency checks and validation
+    - [ ] 11.3.4 Add development data reset functionality
+    - [ ] 11.3.5 Create sample project templates with realistic flows
+    - [ ] 11.3.6 Update AdminPanel to work with new data structure
 
-**🔗 Linhas Pontilhadas Animadas:**
-- **Edges Animados**: Linhas pontilhadas azuis com animação contínua
-- **Prevenção de Auto-conexão**: Nodes não podem se conectar a si mesmos
-- **Prevenção de Duplicatas**: Evita conexões duplicadas entre os mesmos nodes
-- **Estilo Personalizado**: Stroke azul (#2563eb), largura 2px, dash pattern 6-4
-
-**⚙️ Snap to Grid UI:**
-- **Toggle Funcional**: Checkbox para ligar/desligar snap to grid
-- **Grid 16x16**: Espaçamento otimizado para alinhamento
-- **Controles Visuais**: Barra de controles no topo do canvas
-- **Estado Persistente**: Mantém configuração durante a sessão
-
-**🎯 Drag & Drop Corrigido:**
-- **Data Transfer Duplo**: JSON + text/plain para compatibilidade
-- **Logging Melhorado**: Emojis para debug visual (🚀✅❌)
-- **Error Handling**: Try/catch em todas as operações
-- **Accessibility**: ARIA labels e role="button"
-
-**📐 Espaçamento SVG Eliminado:**
-- **Tamanho Exato**: Node container 105x135px = SVG size
-- **Zero Padding**: Eliminado espaço entre SVG e máscara
-- **Posicionamento Absoluto**: SVG preenche 100% do container
-- **Labels Externos**: Posicionados -bottom-6 para não interferir
-- **Ring Selection**: Seleção externa com ring-offset-2
-
-**🎨 Melhorias Visuais:**
-- **Overlay Centralizado**: Ícones perfeitamente centralizados no screen
-- **Handles Otimizados**: Tamanhos adequados (3x3px funnel, 2x2px blocos)
-- **Background Grid**: 16px gap para melhor visualização
-- **Controls Bar**: Interface limpa com instruções para o usuário
-
-**🔧 Funcionalidades Adicionais:**
-- **Add Node Button**: Botão para adicionar nodes programaticamente
-- **Pan & Zoom**: Controles de navegação melhorados
-- **Node Extent**: Área limitada para evitar nodes perdidos
-- **Mini Map**: Navegação visual do canvas
-
-**Resultado:** Interface completamente funcional com todas as funcionalidades essenciais restauradas, proporções perfeitas conforme referência visual, e experiência de usuário otimizada.
-
-**Next Steps:** Ready for Task 3.0 (Mini Map implementation) when user approves. 
+- [ ] 12.0 Add Comprehensive Error Handling and Performance Optimization
+  - [ ] 12.1 Error Handling and User Experience
+    - [ ] 12.1.1 Implement comprehensive error boundaries for project operations
+    - [ ] 12.1.2 Add loading skeletons for all project-related components
+    - [ ] 12.1.3 Create error messages and retry mechanisms
+    - [ ] 12.1.4 Add toast notifications for operations success/failure
+    - [ ] 12.1.5 Create fallback UI for when projects fail to load
+  - [ ] 12.2 Performance and Scalability
+    - [ ] 12.2.1 Implement offline support and sync conflict resolution
+    - [ ] 12.2.2 Implement rate limiting and quota management
+    - [ ] 12.2.3 Add pagination for large project lists
+    - [ ] 12.2.4 Optimize real-time queries for better performance
+  - [ ] 12.3 Monitoring and Analytics
+    - [ ] 12.3.1 Add comprehensive logging for debugging
+    - [ ] 12.3.2 Implement performance monitoring
+    - [ ] 12.3.3 Create usage analytics dashboard
+    - [ ] 12.3.4 Add error tracking and reporting system 
