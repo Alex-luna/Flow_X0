@@ -4,6 +4,7 @@ import Sidebar from "../components/Sidebar";
 import Canvas from "../components/Canvas";
 import Header from "../components/Header";
 import SplashScreen from "../components/SplashScreen";
+import AdminPanel from "../components/AdminPanel";
 
 interface Project {
   id: string;
@@ -53,6 +54,7 @@ export default function MainAppClient() {
             <Canvas onAddNode={addNodeRef as any} />
           </div>
         </main>
+        <AdminPanel />
       </div>
     </>
   );
