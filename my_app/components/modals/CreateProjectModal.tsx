@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, FolderOpen, FileText, AlertCircle, Loader2, Plus } from 'lucide-react';
+import { useProjects } from '../../hooks/useProjects';
+import { useFolders } from '../../hooks/useFolders';
 
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -30,12 +32,6 @@ const PROJECT_TEMPLATES = [
   },
 ];
 
-const MOCK_FOLDERS = [
-  { id: 'personal', name: 'Personal', color: '#3b82f6' },
-  { id: 'work', name: 'Work', color: '#10b981' },
-  { id: 'clients', name: 'Clients', color: '#f59e0b' },
-];
-
 export default function CreateProjectModal({ 
   isOpen, 
   onClose, 
@@ -43,21 +39,33 @@ export default function CreateProjectModal({
 }: CreateProjectModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedFolder, setSelectedFolder] = useState(MOCK_FOLDERS[0].id);
+  const [selectedFolder, setSelectedFolder] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState(PROJECT_TEMPLATES[0].id);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Get Convex hooks
+  const { createProject } = useProjects();
+  const { folders, loading: foldersLoading } = useFolders();
 
   // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setName('');
       setDescription('');
-      setSelectedFolder(MOCK_FOLDERS[0].id);
+      setSelectedFolder(folders.length > 0 ? folders[0]._id : '');
       setSelectedTemplate(PROJECT_TEMPLATES[0].id);
       setError(null);
+      setIsSubmitting(false);
     }
-  }, [isOpen]);
+  }, [isOpen, folders]);
+
+  // Update selected folder when folders load
+  useEffect(() => {
+    if (folders.length > 0 && !selectedFolder) {
+      setSelectedFolder(folders[0]._id);
+    }
+  }, [folders, selectedFolder]);
 
   // Validate project name
   const validateName = (name: string): string | null => {
@@ -88,22 +96,41 @@ export default function CreateProjectModal({
     }
     
     try {
-      // Mock project creation
-      console.log('📊 Creating project:', { 
+      console.log('📊 Submitting project creation:', { 
         name: trimmedName, 
         description, 
-        folder: selectedFolder,
+        folderId: selectedFolder,
         template: selectedTemplate 
       });
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call real Convex mutation
+      const result = await createProject({
+        name: trimmedName,
+        description: description.trim() || undefined,
+        folderId: selectedFolder ? selectedFolder as any : undefined,
+        status: "active",
+        settings: {
+          snapToGrid: true,
+          showMiniMap: true,
+          canvasBackground: "#ffffff",
+          theme: "light",
+          isPublic: false,
+          allowComments: true,
+          autoSave: true,
+          autoSaveInterval: 5000,
+        },
+      });
       
-      const mockProjectId = `project-${Date.now()}`;
-      onSuccess?.(mockProjectId);
-      onClose();
+      if (result.success && result.projectId) {
+        console.log('✅ Project created successfully!', result.projectId);
+        onSuccess?.(result.projectId);
+        onClose();
+      } else {
+        console.error('❌ Failed to create project:', result.error);
+        setError(result.error || 'Failed to create project');
+      }
     } catch (error) {
-      console.error('Failed to create project:', error);
+      console.error('❌ Error creating project:', error);
       setError('Failed to create project. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -113,14 +140,14 @@ export default function CreateProjectModal({
   // Handle ESC key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape' && isOpen && !isSubmitting) {
         onClose();
       }
     };
     
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isSubmitting]);
 
   if (!isOpen) return null;
 
@@ -129,7 +156,7 @@ export default function CreateProjectModal({
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={!isSubmitting ? onClose : undefined}
       />
       
       {/* Modal */}
@@ -214,43 +241,76 @@ export default function CreateProjectModal({
           {/* Folder Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <FolderOpen className="w-4 h-4 inline mr-2" />
               Folder
             </label>
-            <select
-              value={selectedFolder}
-              onChange={(e) => setSelectedFolder(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
-                         focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                         bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              disabled={isSubmitting}
-            >
-              {MOCK_FOLDERS.map((folder) => (
-                <option key={folder.id} value={folder.id}>
-                  {folder.name}
-                </option>
-              ))}
-            </select>
+            {foldersLoading ? (
+              <div className="flex items-center gap-2 p-2 text-gray-500 dark:text-gray-400">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading folders...
+              </div>
+            ) : folders.length === 0 ? (
+              <div className="p-2 text-gray-500 dark:text-gray-400 text-sm">
+                No folders available. Create a folder first.
+              </div>
+            ) : (
+              <select
+                value={selectedFolder}
+                onChange={(e) => setSelectedFolder(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                           focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                disabled={isSubmitting}
+              >
+                <option value="">No folder</option>
+                {folders.map((folder) => (
+                  <option key={folder._id} value={folder._id}>
+                    {folder.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Template Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <FileText className="w-4 h-4 inline mr-2" />
               Template
             </label>
-            <select
-              value={selectedTemplate}
-              onChange={(e) => setSelectedTemplate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
-                         focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                         bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              disabled={isSubmitting}
-            >
+            <div className="grid grid-cols-1 gap-3">
               {PROJECT_TEMPLATES.map((template) => (
-                <option key={template.id} value={template.id}>
-                  {template.name}
-                </option>
+                <label
+                  key={template.id}
+                  className={`
+                    flex items-center p-3 border rounded-lg cursor-pointer transition-all
+                    ${selectedTemplate === template.id 
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                      : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                    }
+                  `}
+                >
+                  <input
+                    type="radio"
+                    name="template"
+                    value={template.id}
+                    checked={selectedTemplate === template.id}
+                    onChange={(e) => setSelectedTemplate(e.target.value)}
+                    className="sr-only"
+                    disabled={isSubmitting}
+                  />
+                  <template.icon className="w-5 h-5 text-gray-600 dark:text-gray-400 mr-3 flex-shrink-0" />
+                  <div>
+                    <div className="font-medium text-gray-900 dark:text-white">
+                      {template.name}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      {template.description}
+                    </div>
+                  </div>
+                </label>
               ))}
-            </select>
+            </div>
           </div>
 
           {/* Error Message */}

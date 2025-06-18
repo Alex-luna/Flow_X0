@@ -1,60 +1,151 @@
 "use client";
 
-import { useState } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../convex/_generated/api";
+import { Id } from "../convex/_generated/dataModel";
 
-// Simplified mock types for development
+// Types matching Convex schema
 export interface FolderData {
-  id: string;
+  _id: Id<"folders">;
+  _creationTime: number;
   name: string;
-  color: string;
-  projectCount: number;
-  createdAt: Date;
+  description?: string;
+  color?: string;
+  icon?: string;
+  parentFolderId?: Id<"folders">;
+  path: string;
+  depth: number;
+  isDeleted: boolean;
+  deletedAt?: number;
+  deletedBy?: string;
+  createdBy?: string;
+  createdAt: number;
+  updatedAt: number;
+  settings?: {
+    isPrivate: boolean;
+    allowSubfolders: boolean;
+    defaultProjectSettings?: {
+      snapToGrid: boolean;
+      showMiniMap: boolean;
+      canvasBackground: string;
+      theme: "light" | "dark";
+    };
+  };
+}
+
+export interface CreateFolderArgs {
+  name: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  parentFolderId?: Id<"folders">;
+  settings?: {
+    isPrivate: boolean;
+    allowSubfolders: boolean;
+    defaultProjectSettings?: {
+      snapToGrid: boolean;
+      showMiniMap: boolean;
+      canvasBackground: string;
+      theme: "light" | "dark";
+    };
+  };
 }
 
 export interface UseFoldersReturn {
   folders: FolderData[];
   loading: boolean;
   error: string | null;
+  createFolder: (args: CreateFolderArgs) => Promise<{ success: boolean; folderId?: Id<"folders">; error?: string }>;
+  updateFolder: (folderId: Id<"folders">, updates: Partial<CreateFolderArgs>) => Promise<{ success: boolean; error?: string }>;
+  deleteFolder: (folderId: Id<"folders">) => Promise<{ success: boolean; error?: string }>;
 }
 
 /**
- * Simplified mock hook for folders - for development only
- * This will be replaced with real Convex integration later
+ * Real Convex hook for folder management
+ * Provides real-time synchronization with Convex backend
  */
 export const useFolders = (): UseFoldersReturn => {
-  console.log('🚀 useFolders mock hook initialized');
+  console.log('🚀 useFolders Convex hook initialized');
 
-  const [loading] = useState(false);
-  const [error] = useState<string | null>(null);
+  // Real-time queries
+  const folders = useQuery(api.folders.getAllFolders) ?? [];
+  const loading = folders === undefined;
 
-  // Mock folders data
-  const folders: FolderData[] = [
-    {
-      id: 'personal',
-      name: 'Personal',
-      color: '#3b82f6',
-      projectCount: 3,
-      createdAt: new Date(),
-    },
-    {
-      id: 'work',
-      name: 'Work',
-      color: '#10b981',
-      projectCount: 5,
-      createdAt: new Date(),
-    },
-    {
-      id: 'clients',
-      name: 'Clients',
-      color: '#f59e0b',
-      projectCount: 2,
-      createdAt: new Date(),
-    },
-  ];
+  // Mutations
+  const createFolderMutation = useMutation(api.folders.createFolder);
+  const updateFolderMutation = useMutation(api.folders.updateFolder);
+  const deleteFolderMutation = useMutation(api.folders.deleteFolder);
+
+  // Wrapper functions with error handling
+  const createFolder = async (args: CreateFolderArgs) => {
+    try {
+      console.log('📁 Creating folder with Convex:', args);
+      const result = await createFolderMutation(args);
+      
+      if (result.success) {
+        console.log('✅ Folder created successfully:', result.folderId);
+        return { success: true, folderId: result.folderId };
+      } else {
+        console.error('❌ Failed to create folder:', result.error);
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('❌ Error creating folder:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      };
+    }
+  };
+
+  const updateFolder = async (folderId: Id<"folders">, updates: Partial<CreateFolderArgs>) => {
+    try {
+      console.log('📝 Updating folder with Convex:', folderId, updates);
+      const result = await updateFolderMutation({ folderId, ...updates });
+      
+      if (result.success) {
+        console.log('✅ Folder updated successfully');
+        return { success: true };
+      } else {
+        console.error('❌ Failed to update folder:', result.error);
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('❌ Error updating folder:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      };
+    }
+  };
+
+  const deleteFolder = async (folderId: Id<"folders">) => {
+    try {
+      console.log('🗑️ Deleting folder with Convex:', folderId);
+      const result = await deleteFolderMutation({ folderId });
+      
+      if (result.success) {
+        console.log('✅ Folder deleted successfully');
+        return { success: true };
+      } else {
+        console.error('❌ Failed to delete folder:', result.error);
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('❌ Error deleting folder:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      };
+    }
+  };
 
   return {
-    folders,
+    folders: folders as FolderData[],
     loading,
-    error,
+    error: null, // Convex handles errors through mutations
+    createFolder,
+    updateFolder,
+    deleteFolder,
   };
 }; 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Folder, Palette, AlertCircle, Loader2 } from 'lucide-react';
+import { useFolders } from '../../hooks/useFolders';
 
 interface CreateFolderModalProps {
   isOpen: boolean;
@@ -32,12 +33,16 @@ export default function CreateFolderModal({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Get Convex hook
+  const { createFolder } = useFolders();
+
   // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setName('');
       setSelectedColor(FOLDER_COLORS[0].value);
       setError(null);
+      setIsSubmitting(false);
     }
   }, [isOpen]);
 
@@ -74,17 +79,34 @@ export default function CreateFolderModal({
     }
     
     try {
-      // Mock folder creation
-      console.log('📁 Creating folder:', { name: trimmedName, color: selectedColor });
+      console.log('📁 Submitting folder creation:', { name: trimmedName, color: selectedColor });
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call real Convex mutation
+      const result = await createFolder({
+        name: trimmedName,
+        color: selectedColor,
+        settings: {
+          isPrivate: false,
+          allowSubfolders: true,
+          defaultProjectSettings: {
+            snapToGrid: true,
+            showMiniMap: true,
+            canvasBackground: "#ffffff",
+            theme: "light",
+          },
+        },
+      });
       
-      const mockFolderId = `folder-${Date.now()}`;
-      onSuccess?.(mockFolderId);
-      onClose();
+      if (result.success && result.folderId) {
+        console.log('✅ Folder created successfully!', result.folderId);
+        onSuccess?.(result.folderId);
+        onClose();
+      } else {
+        console.error('❌ Failed to create folder:', result.error);
+        setError(result.error || 'Failed to create folder');
+      }
     } catch (error) {
-      console.error('Failed to create folder:', error);
+      console.error('❌ Error creating folder:', error);
       setError('Failed to create folder. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -94,14 +116,14 @@ export default function CreateFolderModal({
   // Handle ESC key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape' && isOpen && !isSubmitting) {
         onClose();
       }
     };
     
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isSubmitting]);
 
   if (!isOpen) return null;
 
@@ -110,7 +132,7 @@ export default function CreateFolderModal({
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={!isSubmitting ? onClose : undefined}
       />
       
       {/* Modal */}

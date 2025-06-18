@@ -3,7 +3,7 @@
 - `components/Canvas.tsx` - Componente principal do canvas infinito para desenhar funis e fluxogramas com drag & drop corrigido.
 - `components/Sidebar.tsx` - Biblioteca de blocos arrastáveis/clicáveis completamente redesenhada com layout limpo.
 - `components/MiniMap.tsx` - Mini mapa para navegação do canvas.
-- `components/Header.tsx` - Header completo com navegação e gerenciamento mock de projetos/pastas incluindo dropdown, filtros e modais.
+- `components/Header.tsx` - Header completo com navegação e gerenciamento real de projetos/pastas usando hooks Convex (UPDATED).
 - `components/ExportMenu.tsx` - Exportação do canvas (PDF/PNG/JPG/JSON) e importação de fluxos.
 - `components/ShareModal.tsx` - Compartilhamento de URL (mock).
 - `components/Node.tsx` - Blocos/nodes customizáveis com composição de layers corrigida e tamanhos proporcionais.
@@ -18,12 +18,12 @@
 - `convex/validations.ts` - Comprehensive validation functions for folder names, project data, and all input sanitization (NEW)
 - `hooks/useConvex.ts` - Hook personalizado para integração com Convex backend.
 - `hooks/useCanvasSync.ts` - Hook para auto-save com debouncing e sincronização canvas-Convex.
-- `hooks/useProjects.ts` - Custom hook for project management with Convex integration (NEW)
-- `hooks/useFolders.ts` - Custom hook for folder management with real-time updates (NEW)
+- `hooks/useProjects.ts` - Custom hook for project management with real Convex integration (FIXED)
+- `hooks/useFolders.ts` - Custom hook for folder management with real-time updates (FIXED)
 - `contexts/ProjectContext.tsx` - Context para gerenciamento de estado do projeto atual.
 - `contexts/ConvexProvider.tsx` - Wrapper para Convex client com configuração adequada.
-- `components/modals/CreateFolderModal.tsx` - Modal for creating new folders with validation (NEW)
-- `components/modals/CreateProjectModal.tsx` - Modal for creating new projects with folder selection (NEW)
+- `components/modals/CreateFolderModal.tsx` - Modal for creating new folders with real Convex integration (FIXED)
+- `components/modals/CreateProjectModal.tsx` - Modal for creating new projects with real Convex integration (FIXED)
 - `components/modals/EditProjectModal.tsx` - Modal for editing existing project details (NEW)
 - `components/modals/DeleteConfirmModal.tsx` - Confirmation modal for delete operations (NEW)
 - `components/ProjectDropdown.tsx` - Refactored dropdown with real data and proper styling (NEW)
@@ -42,6 +42,7 @@
 - Implement proper loading states and error handling throughout
 - Use optimistic updates where appropriate for better UX
 - Follow existing design system and theme integration
+- **CRITICAL FIX APPLIED**: Modal-Backend integration now working properly - pastas e projetos são criados no Convex e refletidos na UI em tempo real
 
 ## Tasks
 
@@ -263,20 +264,20 @@
     - [x] 9.1.4 Add validation functions for folder names and project data
     - [x] 9.1.5 Create database indexes for efficient querying by folder and status
     - [x] 9.1.6 Implement soft delete functionality for projects and folders
-  - [ ] 9.2 Create Project and Folder Management Hooks
+  - [x] 9.2 Create Project and Folder Management Hooks
     - [x] 9.2.1 Create hooks/useFolders.ts with real-time folder management
     - [x] 9.2.2 Update hooks/useProjects.ts with folder filtering and advanced queries
     - [x] 9.2.3 Implement optimistic updates for better UX in both hooks
     - [x] 9.2.4 Add error handling and retry logic for failed operations
     - [x] 9.2.5 Create useProjectSync hook for canvas-project synchronization
     - [ ] 9.2.6 Add loading states and caching mechanisms
-  - [ ] 9.3 Build Complete Modal System for CRUD Operations
+  - [x] 9.3 Build Complete Modal System for CRUD Operations
     - [x] 9.3.1 Create components/modals/ directory structure
     - [x] 9.3.2 Build CreateFolderModal with name validation and color picker
     - [x] 9.3.3 Build CreateProjectModal with folder selection and template options
     - [ ] 9.3.4 Build EditProjectModal with all project properties
     - [x] 9.3.5 Build DeleteConfirmModal with warning messages and confirmation
-    - [x] 9.3.6 Integrate modals into Header.tsx and remove mock implementations - COMPLETED: Fixed hydration issues, schema validation, and integrated real modals
+    - [x] 9.3.6 Integrate modals into Header.tsx and fix real data synchronization - COMPLETED: Fixed hooks to use real Convex data, updated modals to call actual mutations, integrated Header with real-time data display
     - [ ] 9.3.7 Fix modal positioning and prevent element overflow
     - [ ] 9.3.8 Add keyboard navigation and accessibility features
     - [ ] 9.3.9 Implement modal state management and proper cleanup

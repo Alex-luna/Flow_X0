@@ -7,35 +7,8 @@ import ShareModal from "./ShareModal";
 import CreateFolderModal from "./modals/CreateFolderModal";
 import CreateProjectModal from "./modals/CreateProjectModal";
 import FlowXIcon from './logos/FlowXIcon';
-
-// Mock data interfaces for development
-interface MockProject {
-  id: string;
-  name: string;
-  folder: string;
-  lastModified: Date;
-  status: 'active' | 'draft' | 'archived';
-}
-
-interface Folder {
-  id: string;
-  name: string;
-  color: string;
-  projectCount: number;
-}
-
-// Mock data for development
-const mockFolders: Folder[] = [
-  { id: 'personal', name: 'Personal', color: '#3b82f6', projectCount: 3 },
-  { id: 'work', name: 'Work', color: '#10b981', projectCount: 5 },
-  { id: 'clients', name: 'Clients', color: '#f59e0b', projectCount: 2 },
-];
-
-const mockProjects: MockProject[] = [
-  { id: '1', name: 'Lead Generation Funnel', folder: 'work', lastModified: new Date(), status: 'active' },
-  { id: '2', name: 'E-commerce Flow', folder: 'personal', lastModified: new Date(), status: 'draft' },
-  { id: '3', name: 'Client Onboarding', folder: 'clients', lastModified: new Date(), status: 'active' },
-];
+import { useFolders } from '../hooks/useFolders';
+import { useProjects } from '../hooks/useProjects';
 
 export default function Header() {
   const { theme, isDark, toggleTheme, isHydrated } = useTheme();
@@ -47,6 +20,10 @@ export default function Header() {
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+
+  // Real Convex hooks
+  const { folders, loading: foldersLoading } = useFolders();
+  const { projects, loading: projectsLoading } = useProjects();
 
   // Don't render anything until hydrated to prevent hydration mismatches
   if (!isHydrated) {
@@ -60,13 +37,27 @@ export default function Header() {
     );
   }
 
-  // Use mock data for display until real integration is complete
-  const currentProjectData = mockProjects[0];
-  const currentFolderData = mockFolders.find(f => f.id === currentProjectData.folder);
+  // Use real data from Convex
+  const currentProjectData = projects.length > 0 ? projects[0] : {
+    _id: "default" as any,
+    name: "My First Project",
+    status: "active" as const,
+    folderId: undefined
+  };
+  
+  const currentFolderData = currentProjectData.folderId 
+    ? folders.find(f => f._id === currentProjectData.folderId)
+    : null;
 
   const filteredProjects = selectedFolder === 'all' 
-    ? mockProjects 
-    : mockProjects.filter(p => p.folder === selectedFolder);
+    ? projects 
+    : projects.filter(p => p.folderId === selectedFolder);
+
+  // Calculate project counts for folders
+  const foldersWithCounts = folders.map(folder => ({
+    ...folder,
+    projectCount: projects.filter(p => p.folderId === folder._id).length
+  }));
 
   const handleProjectSelect = () => {
     setIsProjectDropdownOpen(false);
@@ -142,12 +133,12 @@ export default function Header() {
     setShowExportMenu(false);
   };
 
-  const getStatusColor = (status: MockProject['status']) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'draft': return 'bg-yellow-100 text-yellow-800';
-      case 'archived': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
+      case 'draft': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
+      case 'archived': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   };
 
@@ -229,59 +220,84 @@ export default function Header() {
                 </div>
 
                 {/* Folder Filter */}
-                <div className="flex gap-2 mb-4">
-                  <button
-                    onClick={() => setSelectedFolder('all')}
-                    className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                      selectedFolder === 'all' 
-                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    All
-                  </button>
-                  {mockFolders.map(folder => (
+                {foldersLoading ? (
+                  <div className="flex items-center gap-2 p-2 text-gray-500 dark:text-gray-400 mb-4">
+                    <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                    Loading folders...
+                  </div>
+                ) : (
+                  <div className="flex gap-2 mb-4 flex-wrap">
                     <button
-                      key={folder.id}
-                      onClick={() => setSelectedFolder(folder.id)}
+                      onClick={() => setSelectedFolder('all')}
                       className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                        selectedFolder === folder.id 
+                        selectedFolder === 'all' 
                           ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' 
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
                       }`}
                     >
-                      {folder.name} ({folder.projectCount})
+                      All ({projects.length})
                     </button>
-                  ))}
-                </div>
+                    {foldersWithCounts.map(folder => (
+                      <button
+                        key={folder._id}
+                        onClick={() => setSelectedFolder(folder._id)}
+                        className={`px-3 py-1 rounded-full text-sm transition-colors flex items-center gap-1 ${
+                          selectedFolder === folder._id 
+                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' 
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        <div 
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: folder.color }}
+                        />
+                        {folder.name} ({folder.projectCount})
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Project List */}
               <div className="max-h-64 overflow-y-auto">
-                {filteredProjects.map(project => {
-                  const folder = mockFolders.find(f => f.id === project.folder);
-                  return (
-                    <button
-                      key={project.id}
-                      onClick={() => handleProjectSelect()}
-                      className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div 
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: folder?.color || '#6b7280' }}
-                        />
-                        <div>
-                          <div className="font-medium text-gray-900 dark:text-white">{project.name}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{folder?.name}</div>
+                {projectsLoading ? (
+                  <div className="flex items-center justify-center p-8 text-gray-500 dark:text-gray-400">
+                    <div className="w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mr-2"></div>
+                    Loading projects...
+                  </div>
+                ) : filteredProjects.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                    <p className="text-sm">No projects found.</p>
+                    <p className="text-xs mt-1">Create a new project to get started.</p>
+                  </div>
+                ) : (
+                  filteredProjects.map(project => {
+                    const folder = folders.find(f => f._id === project.folderId);
+                    return (
+                      <button
+                        key={project._id}
+                        onClick={() => handleProjectSelect()}
+                        className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: folder?.color || '#6b7280' }}
+                          />
+                          <div>
+                            <div className="font-medium text-gray-900 dark:text-white">{project.name}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              {folder?.name || 'No folder'}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
-                        {project.status}
-                      </span>
-                    </button>
-                  );
-                })}
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+                          {project.status}
+                        </span>
+                      </button>
+                    );
+                  })
+                )}
               </div>
             </div>
           )}
