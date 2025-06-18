@@ -140,7 +140,8 @@ interface ThemeContextType {
   theme: Theme;
   isDark: boolean;
   toggleTheme: () => void;
-  setTheme: (themeName: 'light' | 'dark') => void;
+  setTheme: (theme: 'light' | 'dark') => void;
+  isHydrated: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -158,28 +159,53 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
+  // Start with light theme to match server-side rendering
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light');
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  // Load theme from localStorage on mount
+  // Load theme from localStorage only after hydration
   useEffect(() => {
-    const savedTheme = localStorage.getItem('flowx-theme') as 'light' | 'dark' | null;
-    if (savedTheme) {
-      setCurrentTheme(savedTheme);
-    } else {
-      // Check system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setCurrentTheme(prefersDark ? 'dark' : 'light');
-    }
+    const timer = setTimeout(() => {
+      setIsHydrated(true);
+      
+      try {
+        // Only access localStorage and window after component mounts (client-side)
+        const savedTheme = localStorage.getItem('flowx-theme') as 'light' | 'dark' | null;
+        if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+          setCurrentTheme(savedTheme);
+        } else {
+          // Check system preference only on client
+          if (typeof window !== 'undefined' && window.matchMedia) {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            setCurrentTheme(prefersDark ? 'dark' : 'light');
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load theme from localStorage:', error);
+        // Fallback to light theme
+        setCurrentTheme('light');
+      }
+    }, 50);
+
+    return () => clearTimeout(timer);
   }, []);
 
-  // Save theme to localStorage when it changes
+  // Save theme to localStorage when it changes (only after hydration)
   useEffect(() => {
-    localStorage.setItem('flowx-theme', currentTheme);
+    if (!isHydrated) return;
     
-    // Update document class for global theming
-    document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(currentTheme);
-  }, [currentTheme]);
+    try {
+      localStorage.setItem('flowx-theme', currentTheme);
+      
+      // Update document class for global theming
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.remove('light', 'dark');
+        document.documentElement.classList.add(currentTheme);
+      }
+    } catch (error) {
+      console.warn('Failed to save theme to localStorage:', error);
+    }
+  }, [currentTheme, isHydrated]);
 
   const theme = currentTheme === 'dark' ? darkTheme : lightTheme;
   const isDark = currentTheme === 'dark';
@@ -197,6 +223,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     isDark,
     toggleTheme,
     setTheme,
+    isHydrated,
   };
 
   return (

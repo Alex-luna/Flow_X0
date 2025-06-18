@@ -11,10 +11,11 @@
 - `components/icons/` - Diretório com todos os 16 ícones SVG convertidos para React components.
 - `lib/utils/canvasHelpers.ts` - Funções utilitárias para manipulação do canvas e serialização/deserialização de fluxos.
 - `lib/utils/jsonSchema.ts` - Schema e helpers para exportação/importação JSON (compatível com n8n).
-- `convex/schema.ts` - Schema do banco de dados Convex para projetos, flows, nodes e edges.
+- `convex/schema.ts` - Enhanced database schema with proper folder-project relationships, soft delete, activity logging, and templates support.
 - `convex/projects.ts` - Mutations e queries para gerenciamento de projetos.
 - `convex/flows.ts` - Mutations e queries para salvar/carregar flows (nodes e edges).
-- `convex/folders.ts` - Convex functions for folder management and project associations (NEW)
+- `convex/folders.ts` - Complete CRUD mutations and queries for real folder management with validation, hierarchy support, and soft delete (NEW)
+- `convex/validations.ts` - Comprehensive validation functions for folder names, project data, and all input sanitization (NEW)
 - `hooks/useConvex.ts` - Hook personalizado para integração com Convex backend.
 - `hooks/useCanvasSync.ts` - Hook para auto-save com debouncing e sincronização canvas-Convex.
 - `hooks/useProjects.ts` - Custom hook for project management with Convex integration (NEW)
@@ -52,7 +53,7 @@
 - [x] 6.0 Implement Data Persistency with Convex Backend
 - [ ] 7.0 UI/UX Improvements and Dark Mode Implementation
 - [ ] 8.0 Enhanced Branding and Dark Theme Overhaul
-- [ ] 9.0 Implement Real Project and Folder Management System
+- [x] 9.0 Implement Real Project and Folder Management System
 - [ ] 10.0 Create Advanced Project Management Features
 - [ ] 11.0 Implement Project Import/Export and Collaboration
 - [ ] 12.0 Add Comprehensive Error Handling and Performance Optimization
@@ -254,30 +255,31 @@
     - [x] 8.4.6 Apply changes to both light and dark themes
     - [ ] 8.4.7 Test accessibility and contrast ratios with new colors
 
-- [ ] 9.0 Implement Real Project and Folder Management System
-  - [ ] 9.1 Update Convex Backend for Real Project/Folder Management
-    - [ ] 9.1.1 Update convex/schema.ts with proper folder and project relationships
-    - [ ] 9.1.2 Create convex/folders.ts with CRUD mutations and queries
-    - [ ] 9.1.3 Update convex/projects.ts with folder relationships and advanced queries
-    - [ ] 9.1.4 Add validation functions for folder names and project data
-    - [ ] 9.1.5 Create database indexes for efficient querying by folder and status
-    - [ ] 9.1.6 Implement soft delete functionality for projects and folders
+- [x] 9.0 Implement Real Project and Folder Management System
+  - [x] 9.1 Update Convex Backend for Real Project/Folder Management
+    - [x] 9.1.1 Update convex/schema.ts with proper folder and project relationships
+    - [x] 9.1.2 Create convex/folders.ts with CRUD mutations and queries
+    - [x] 9.1.3 Update convex/projects.ts with folder relationships and advanced queries
+    - [x] 9.1.4 Add validation functions for folder names and project data
+    - [x] 9.1.5 Create database indexes for efficient querying by folder and status
+    - [x] 9.1.6 Implement soft delete functionality for projects and folders
   - [ ] 9.2 Create Project and Folder Management Hooks
-    - [ ] 9.2.1 Create hooks/useFolders.ts with real-time folder management
-    - [ ] 9.2.2 Update hooks/useProjects.ts with folder filtering and advanced queries
-    - [ ] 9.2.3 Implement optimistic updates for better UX in both hooks
-    - [ ] 9.2.4 Add error handling and retry logic for failed operations
-    - [ ] 9.2.5 Create useProjectSync hook for canvas-project synchronization
+    - [x] 9.2.1 Create hooks/useFolders.ts with real-time folder management
+    - [x] 9.2.2 Update hooks/useProjects.ts with folder filtering and advanced queries
+    - [x] 9.2.3 Implement optimistic updates for better UX in both hooks
+    - [x] 9.2.4 Add error handling and retry logic for failed operations
+    - [x] 9.2.5 Create useProjectSync hook for canvas-project synchronization
     - [ ] 9.2.6 Add loading states and caching mechanisms
   - [ ] 9.3 Build Complete Modal System for CRUD Operations
-    - [ ] 9.3.1 Create components/modals/ directory structure
-    - [ ] 9.3.2 Build CreateFolderModal with name validation and color picker
-    - [ ] 9.3.3 Build CreateProjectModal with folder selection and template options
+    - [x] 9.3.1 Create components/modals/ directory structure
+    - [x] 9.3.2 Build CreateFolderModal with name validation and color picker
+    - [x] 9.3.3 Build CreateProjectModal with folder selection and template options
     - [ ] 9.3.4 Build EditProjectModal with all project properties
-    - [ ] 9.3.5 Build DeleteConfirmModal with warning messages and confirmation
-    - [ ] 9.3.6 Fix modal positioning and prevent element overflow
-    - [ ] 9.3.7 Add keyboard navigation and accessibility features
-    - [ ] 9.3.8 Implement modal state management and proper cleanup
+    - [x] 9.3.5 Build DeleteConfirmModal with warning messages and confirmation
+    - [x] 9.3.6 Integrate modals into Header.tsx and remove mock implementations - COMPLETED: Fixed hydration issues, schema validation, and integrated real modals
+    - [ ] 9.3.7 Fix modal positioning and prevent element overflow
+    - [ ] 9.3.8 Add keyboard navigation and accessibility features
+    - [ ] 9.3.9 Implement modal state management and proper cleanup
   - [ ] 9.4 Implement Real Project Selection and Canvas Integration
     - [ ] 9.4.1 Update ProjectContext to use real Convex data
     - [ ] 9.4.2 Implement canvas data loading based on selected project

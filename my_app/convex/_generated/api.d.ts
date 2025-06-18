@@ -14,8 +14,10 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as flows from "../flows.js";
+import type * as folders from "../folders.js";
 import type * as projects from "../projects.js";
 import type * as seedData from "../seedData.js";
+import type * as validations from "../validations.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -27,8 +29,10 @@ import type * as seedData from "../seedData.js";
  */
 declare const fullApi: ApiFromModules<{
   flows: typeof flows;
+  folders: typeof folders;
   projects: typeof projects;
   seedData: typeof seedData;
+  validations: typeof validations;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
