@@ -3,6 +3,7 @@
 - `components/Canvas.tsx` - Componente principal do canvas infinito para desenhar funis e fluxogramas com drag & drop corrigido.
 - `components/Sidebar.tsx` - Biblioteca de blocos arrastáveis/clicáveis completamente redesenhada com layout limpo.
 - `components/MiniMap.tsx` - Mini mapa para navegação do canvas.
+- `components/SaveStatusIndicator.tsx` - Componente de indicador de status de salvamento com bolinha colorida e tooltip (NEW).
 - `components/Header.tsx` - Header completo com navegação e gerenciamento real de projetos/pastas usando hooks Convex (UPDATED).
 - `components/ExportMenu.tsx` - Exportação do canvas (PDF/PNG/JPG/JSON) e importação de fluxos.
 - `components/ShareModal.tsx` - Compartilhamento de URL (mock).
@@ -58,6 +59,7 @@
 - [ ] 10.0 Create Advanced Project Management Features
 - [ ] 11.0 Implement Project Import/Export and Collaboration
 - [ ] 12.0 Add Comprehensive Error Handling and Performance Optimization
+- [ ] 13.0 Improve Auto-Save Status Indicator UX
 
 ---
 
@@ -348,4 +350,21 @@
     - [ ] 12.3.1 Add comprehensive logging for debugging
     - [ ] 12.3.2 Implement performance monitoring
     - [ ] 12.3.3 Create usage analytics dashboard
-    - [ ] 12.3.4 Add error tracking and reporting system 
+    - [ ] 12.3.4 Add error tracking and reporting system
+
+- [x] 13.0 Improve Auto-Save Status Indicator UX
+  - [x] 13.1 Replace text-based save indicator with subtle status dot
+    - [x] 13.1.1 Create SaveStatusIndicator component with colored status dot
+    - [x] 13.1.2 Implement three states: Saved (green), Saving (yellow/pulsing), Error (red)
+    - [x] 13.1.3 Add tooltip on hover with detailed status information
+    - [x] 13.1.4 Position indicator in less intrusive location (top-right corner)
+  - [x] 13.2 Enhance auto-save feedback system
+    - [x] 13.2.1 Remove constantly changing text that causes visual distraction
+    - [x] 13.2.2 Add smooth animations only during state transitions
+    - [x] 13.2.3 Implement subtle pulse animation during save operations
+    - [x] 13.2.4 Add accessibility support with ARIA labels
+  - [x] 13.3 Integrate new indicator with Canvas component
+    - [x] 13.3.1 Replace existing save status display in Canvas.tsx
+    - [x] 13.3.2 Connect SaveStatusIndicator to useCanvasSync hook states
+    - [x] 13.3.3 Test indicator behavior with different save scenarios
+    - [x] 13.3.4 Ensure proper theme integration (light/dark modes) 

@@ -24,6 +24,7 @@ import 'reactflow/dist/style.css';
 import CustomNode from './Node';
 import { useTheme } from '../contexts/ThemeContext';
 import { useCanvasSync } from '../hooks/useCanvasSync';
+import { SaveStatusIndicator } from './SaveStatusIndicator';
 
 const nodeTypes = {
   custom: CustomNode,
@@ -54,6 +55,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     lastSaveTime,
     manualSave,
     hasUnsavedChanges,
+    saveStatus,
   } = useCanvasSync();
   
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
@@ -417,21 +419,14 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
             🎯 Drag from sidebar | Space+Drag to pan | Right-click drag to pan | Scroll to zoom
           </div>
           
-          {/* Loading and Save Status */}
-          {isLoading && (
-            <div className="flex items-center gap-2 text-sm" style={{ color: theme.colors.text.secondary }}>
-              <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full"></div>
-              Loading...
-            </div>
-          )}
+          {/* Save Status Indicator */}
+          <SaveStatusIndicator 
+            status={saveStatus}
+            lastSaveTime={lastSaveTime}
+            className="mr-2"
+          />
           
-          {!isLoading && lastSaveTime && (
-            <div className="flex items-center gap-2 text-sm" style={{ color: theme.colors.accent.success }}>
-              <span>💾</span>
-              Saved {hasUnsavedChanges ? '(unsaved changes)' : 'automatically'}
-            </div>
-          )}
-          
+          {/* Manual Save Button (only show when needed) */}
           {!isLoading && !isLoaded && (
             <button
               onClick={manualSave}

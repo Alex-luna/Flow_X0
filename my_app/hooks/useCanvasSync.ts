@@ -7,6 +7,8 @@ import { api } from "../convex/_generated/api";
 import { Id } from "../convex/_generated/dataModel";
 import { useProject } from "../contexts/ProjectContext";
 
+export type SaveStatus = 'saved' | 'saving' | 'error' | 'idle';
+
 export interface CanvasSyncState {
   nodes: Node[];
   edges: Edge[];
@@ -15,6 +17,7 @@ export interface CanvasSyncState {
   isLoaded: boolean;
   lastSaveTime: Date | null;
   hasUnsavedChanges: boolean;
+  saveStatus: SaveStatus;
 }
 
 export function useCanvasSync(autoSaveDelay: number = 2000) {
@@ -28,6 +31,7 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [activeFlowId, setActiveFlowId] = useState<Id<"flows"> | null>(null);
 
   // Convex queries and mutations
@@ -75,6 +79,7 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
         setViewport({ x: 0, y: 0, zoom: 1 });
         setIsLoaded(true);
         setLastSaveTime(new Date());
+        setSaveStatus('saved');
       }).catch((error) => {
         console.error('❌ Failed to create flow:', error);
       });
@@ -107,6 +112,7 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
       setIsLoaded(true);
       setLastSaveTime(new Date(completeFlowData.lastModified));
       setHasUnsavedChanges(false);
+      setSaveStatus('saved');
       
       console.log('✅ Loaded flow data:', {
         nodes: reactFlowNodes.length,
@@ -131,6 +137,7 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
         edges: edges.length 
       });
 
+      setSaveStatus('saving');
       setIsLoading(true);
 
              // Convert ReactFlow data to Convex format
@@ -174,10 +181,12 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
 
       setLastSaveTime(new Date());
       setHasUnsavedChanges(false);
+      setSaveStatus('saved');
       
       console.log('✅ Saved to Convex successfully');
     } catch (error) {
       console.error('❌ Save to Convex failed:', error);
+      setSaveStatus('error');
     } finally {
       setIsLoading(false);
     }
@@ -200,6 +209,22 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
       setHasUnsavedChanges(true);
     }
   }, [nodes, edges, viewport, isLoaded]);
+
+  // Update save status based on state changes
+  useEffect(() => {
+    if (!isLoaded) {
+      setSaveStatus('idle');
+    } else if (isLoading) {
+      setSaveStatus('saving');
+    } else if (hasUnsavedChanges && !isLoading) {
+      // Only show idle status if there are truly unsaved changes for a while
+      const timeoutId = setTimeout(() => {
+        setSaveStatus('idle');
+      }, 1000); // Wait 1 second before showing "idle" status
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isLoaded, isLoading, hasUnsavedChanges]);
 
   // Manual save function
   const manualSave = useCallback(async () => {
@@ -228,6 +253,7 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
     isLoaded,
     lastSaveTime,
     hasUnsavedChanges,
+    saveStatus,
     
     // Actions
     manualSave,
