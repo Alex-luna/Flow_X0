@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { Id } from "../convex/_generated/dataModel";
+import { useProjects, ProjectData } from "../hooks/useProjects";
 
 // Types
 export interface Project {
@@ -25,9 +26,13 @@ export interface Project {
 
 export interface ProjectContextType {
   currentProject: Project | null;
+  currentProjectData: ProjectData | null;
   setCurrentProject: (project: Project | null) => void;
   isLoading: boolean;
   isHydrated: boolean;
+  // New functionality for real integration
+  selectProject: (projectId: Id<"projects">) => void;
+  clearProject: () => void;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -48,6 +53,14 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
   const [currentProject, setCurrentProjectState] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isHydrated, setIsHydrated] = useState(false);
+
+  // Use real Convex data
+  const { projects } = useProjects();
+
+  // Get current project data from Convex
+  const currentProjectData = currentProject 
+    ? projects.find(p => p._id === currentProject.id) || null
+    : null;
 
   // Load project from localStorage only after hydration
   useEffect(() => {
@@ -76,6 +89,14 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     return () => clearTimeout(timer);
   }, []);
 
+  // Auto-select first available project if none selected
+  useEffect(() => {
+    if (isHydrated && !currentProject && projects.length > 0) {
+      const firstProject = projects[0];
+      selectProject(firstProject._id);
+    }
+  }, [isHydrated, currentProject, projects]);
+
   const setCurrentProject = (project: Project | null) => {
     setCurrentProjectState(project);
     
@@ -93,11 +114,38 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     }
   };
 
+  const selectProject = (projectId: Id<"projects">) => {
+    const projectData = projects.find(p => p._id === projectId);
+    if (projectData) {
+      const project: Project = {
+        id: projectData._id,
+        name: projectData.name,
+        folderId: projectData.folderId,
+        description: projectData.description,
+        createdAt: new Date(projectData._creationTime),
+        updatedAt: new Date(projectData.lastModified),
+        isDeleted: projectData.isDeleted,
+        accessedAt: new Date(projectData.accessedAt),
+        settings: projectData.settings,
+      };
+      setCurrentProject(project);
+      console.log('✅ Project selected:', projectData.name);
+    }
+  };
+
+  const clearProject = () => {
+    setCurrentProject(null);
+    console.log('🧹 Project cleared');
+  };
+
   const value: ProjectContextType = {
     currentProject,
+    currentProjectData,
     setCurrentProject,
     isLoading,
     isHydrated,
+    selectProject,
+    clearProject,
   };
 
   return (

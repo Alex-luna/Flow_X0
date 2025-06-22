@@ -6,9 +6,14 @@ import ExportMenu from "./ExportMenu";
 import ShareModal from "./ShareModal";
 import CreateFolderModal from "./modals/CreateFolderModal";
 import CreateProjectModal from "./modals/CreateProjectModal";
+import EditProjectModal from "./modals/EditProjectModal";
+import EditFolderModal from "./modals/EditFolderModal";
+import DeleteConfirmModal from "./modals/DeleteConfirmModal";
 import FlowXIcon from './logos/FlowXIcon';
 import { useFolders } from '../hooks/useFolders';
-import { useProjects } from '../hooks/useProjects';
+import { useProjects, ProjectData } from '../hooks/useProjects';
+import { useProject } from '../contexts/ProjectContext';
+import { Id } from '../convex/_generated/dataModel';
 
 export default function Header() {
   const { theme, isDark, toggleTheme, isHydrated } = useTheme();
@@ -18,12 +23,23 @@ export default function Header() {
   // Modal states
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [showCreateProject, setShowCreateProject] = useState(false);
+  const [showEditProject, setShowEditProject] = useState(false);
+  const [showEditFolder, setShowEditFolder] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  
+  // Edit states
+  const [editingProject, setEditingProject] = useState<ProjectData | null>(null);
+  const [editingFolderId, setEditingFolderId] = useState<Id<"folders"> | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'project' | 'folder', id: string, name: string } | null>(null);
 
   // Real Convex hooks
   const { folders, loading: foldersLoading } = useFolders();
-  const { projects, loading: projectsLoading } = useProjects();
+  const { projects, loading: projectsLoading, deleteProject } = useProjects();
+  
+  // Project context
+  const { currentProject, selectProject, clearProject, setCurrentProject } = useProject();
 
   // Don't render anything until hydrated to prevent hydration mismatches
   if (!isHydrated) {
@@ -37,13 +53,15 @@ export default function Header() {
     );
   }
 
-  // Use real data from Convex
-  const currentProjectData = projects.length > 0 ? projects[0] : {
-    _id: "default" as any,
-    name: "My First Project",
-    status: "active" as const,
-    folderId: undefined
-  };
+  // Use real data from Convex with project context
+  const currentProjectData = currentProject && projects.find(p => p._id === currentProject.id) 
+    ? projects.find(p => p._id === currentProject.id)!
+    : projects.length > 0 ? projects[0] : {
+        _id: "default" as any,
+        name: "My First Project",
+        status: "active" as const,
+        folderId: undefined
+      };
   
   const currentFolderData = currentProjectData.folderId 
     ? folders.find(f => f._id === currentProjectData.folderId)
@@ -59,9 +77,13 @@ export default function Header() {
     projectCount: projects.filter(p => p.folderId === folder._id).length
   }));
 
-  const handleProjectSelect = () => {
+  const handleProjectSelect = (project: ProjectData) => {
     setIsProjectDropdownOpen(false);
-    // TODO: Implement project selection logic when needed
+    
+    // Update project context using just the ID
+    selectProject(project._id);
+    
+    console.log('✅ Project selected:', project.name);
   };
 
   const handleFolderCreated = (folderId: string) => {
@@ -72,6 +94,45 @@ export default function Header() {
   const handleProjectCreated = (projectId: string) => {
     console.log('✅ Project created:', projectId);
     setIsProjectDropdownOpen(false);
+  };
+
+  const handleEditSuccess = (id: string) => {
+    console.log('✅ Edit successful:', id);
+    setShowEditProject(false);
+    setShowEditFolder(false);
+    setEditingProject(null);
+    setEditingFolderId(null);
+  };
+
+  const handleDelete = async (): Promise<boolean> => {
+    if (!deleteTarget) return false;
+    
+    try {
+      if (deleteTarget.type === 'project') {
+        const result = await deleteProject(deleteTarget.id as any);
+        if (result.success) {
+          console.log('✅ Project deleted successfully');
+          // If current project was deleted, reset selection
+          if (currentProject?.id === deleteTarget.id) {
+            setCurrentProject(null);
+          }
+          return true;
+        } else {
+          console.error('❌ Failed to delete project:', result.error);
+          return false;
+        }
+      } else {
+        // TODO: Implement folder deletion
+        console.log('🚧 Folder deletion not yet implemented');
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Error deleting:', error);
+      return false;
+    } finally {
+      setShowDeleteConfirm(false);
+      setDeleteTarget(null);
+    }
   };
 
   const handleExport = async (format: 'pdf' | 'png' | 'jpg' | 'json') => {
@@ -238,21 +299,37 @@ export default function Header() {
                       All ({projects.length})
                     </button>
                     {foldersWithCounts.map(folder => (
-                      <button
-                        key={folder._id}
-                        onClick={() => setSelectedFolder(folder._id)}
-                        className={`px-3 py-1 rounded-full text-sm transition-colors flex items-center gap-1 ${
-                          selectedFolder === folder._id 
-                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' 
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                        }`}
-                      >
-                        <div 
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: folder.color }}
-                        />
-                        {folder.name} ({folder.projectCount})
-                      </button>
+                      <div key={folder._id} className="flex items-center gap-1 group">
+                        <button
+                          onClick={() => setSelectedFolder(folder._id)}
+                          className={`px-3 py-1 rounded-full text-sm transition-colors flex items-center gap-1 ${
+                            selectedFolder === folder._id 
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' 
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          <div 
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: folder.color }}
+                          />
+                          {folder.name} ({folder.projectCount})
+                        </button>
+                        
+                        {/* Folder edit button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingFolderId(folder._id);
+                            setShowEditFolder(true);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded text-blue-600 dark:text-blue-400 transition-opacity"
+                          title="Edit folder"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -274,12 +351,14 @@ export default function Header() {
                   filteredProjects.map(project => {
                     const folder = folders.find(f => f._id === project.folderId);
                     return (
-                      <button
+                      <div
                         key={project._id}
-                        onClick={() => handleProjectSelect()}
-                        className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
+                        className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
                       >
-                        <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handleProjectSelect(project)}
+                          className="flex items-center gap-3 flex-1 text-left"
+                        >
                           <div 
                             className="w-3 h-3 rounded-full"
                             style={{ backgroundColor: folder?.color || '#6b7280' }}
@@ -290,11 +369,48 @@ export default function Header() {
                               {folder?.name || 'No folder'}
                             </div>
                           </div>
+                        </button>
+                        
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+                            {project.status}
+                          </span>
+                          
+                          {/* Edit and Delete buttons */}
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingProject(project);
+                                setShowEditProject(true);
+                              }}
+                              className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded text-blue-600 dark:text-blue-400"
+                              title="Edit project"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteTarget({
+                                  type: 'project',
+                                  id: project._id,
+                                  name: project.name
+                                });
+                                setShowDeleteConfirm(true);
+                              }}
+                              className="p-1 hover:bg-red-100 dark:hover:bg-red-900/20 rounded text-red-600 dark:text-red-400"
+                              title="Delete project"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
-                          {project.status}
-                        </span>
-                      </button>
+                      </div>
                     );
                   })
                 )}
@@ -380,6 +496,46 @@ export default function Header() {
         isOpen={showCreateProject}
         onClose={() => setShowCreateProject(false)}
         onSuccess={handleProjectCreated}
+      />
+
+      {/* Edit Modals */}
+      <EditProjectModal
+        isOpen={showEditProject}
+        onClose={() => {
+          setShowEditProject(false);
+          setEditingProject(null);
+        }}
+        project={editingProject}
+        onSuccess={handleEditSuccess}
+      />
+
+      <EditFolderModal
+        isOpen={showEditFolder}
+        onClose={() => {
+          setShowEditFolder(false);
+          setEditingFolderId(null);
+        }}
+        folderId={editingFolderId}
+        onSuccess={handleEditSuccess}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setDeleteTarget(null);
+        }}
+        onConfirm={handleDelete}
+        title={`Delete ${deleteTarget?.type || 'item'}`}
+        message={`Are you sure you want to delete this ${deleteTarget?.type || 'item'}?`}
+        itemName={deleteTarget?.name || ''}
+        itemType={deleteTarget?.type || 'project'}
+        warningMessage={
+          deleteTarget?.type === 'folder' 
+            ? 'All projects within this folder will also be deleted.'
+            : 'All canvas data and flow information will be permanently lost.'
+        }
       />
 
       {/* Export Menu */}
