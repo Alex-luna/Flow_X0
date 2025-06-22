@@ -32,7 +32,7 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
 
   // Convex queries and mutations
   const completeFlowData = useQuery(
-    api.flows.getCompleteFlow, 
+    api.flows.getCompleteFlowSimple, 
     currentProject ? { projectId: currentProject.id as Id<"projects"> } : "skip"
   );
   
@@ -82,42 +82,36 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
       // Load existing flow data
       console.log('📂 Loading flow data for project:', currentProject.name);
       
-      setActiveFlowId(completeFlowData.flow._id);
+      setActiveFlowId(completeFlowData.flowId);
       
       // Convert Convex data to ReactFlow format
       const reactFlowNodes: Node[] = completeFlowData.nodes.map(node => ({
-        id: node.nodeId,
+        id: node.id,
         type: 'custom',
         position: node.position,
         data: node.data,
-        style: node.style,
-        selected: node.selected || false,
-        dragging: node.dragging || false,
       }));
 
       const reactFlowEdges: Edge[] = completeFlowData.edges.map(edge => ({
-        id: edge.edgeId,
+        id: edge.id,
         source: edge.source,
         target: edge.target,
         sourceHandle: edge.sourceHandle,
         targetHandle: edge.targetHandle,
-        type: edge.type,
         animated: edge.animated || true,
-        style: edge.style,
-        label: edge.label,
       }));
 
       setNodes(reactFlowNodes);
       setEdges(reactFlowEdges);
-      setViewport(completeFlowData.flow.viewport);
+      setViewport(completeFlowData.viewport);
       setIsLoaded(true);
-      setLastSaveTime(new Date(completeFlowData.flow.lastModified));
+      setLastSaveTime(new Date(completeFlowData.lastModified));
       setHasUnsavedChanges(false);
       
       console.log('✅ Loaded flow data:', {
         nodes: reactFlowNodes.length,
         edges: reactFlowEdges.length,
-        viewport: completeFlowData.flow.viewport
+        viewport: completeFlowData.viewport
       });
     }
   }, [currentProject, completeFlowData, createFlowMutation]);
