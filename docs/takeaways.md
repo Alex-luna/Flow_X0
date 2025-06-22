@@ -72,6 +72,34 @@
 - Console errors sobre HTML attribute mismatches
 - useCanvasSync tentando importar useProjectContext inexistente
 
+### 9. 🔥 CRITICAL: Canvas Auto-Save Bug - Flow Data Loss
+**Erro:** Fluxos desenhados no canvas eram perdidos ao trocar de projeto
+
+**Problema:** Condição no `useCanvasSync.ts` impedia salvamento de flows vazios ou com poucos nodes.
+
+**Código Problemático:**
+```typescript
+// LINHA 109 - useCanvasSync.ts (PROBLEMA)
+if (!activeFlowId || !currentProject || nodes.length === 0) {
+  console.log('⚠️ Skipping save: no flow, project, or empty nodes');
+  return;
+}
+```
+
+**Root Cause:** A condição `nodes.length === 0` impedia que:
+- Flows vazios fossem salvos (após usuário remover todos os nodes)
+- Auto-save funcionasse corretamente em estados intermediários
+- Mudanças fossem persistidas no Convex quando canvas ficasse vazio
+
+**Sintomas:**
+- ✅ Usuário desenha fluxo → funciona
+- ❌ Usuário troca de projeto → dados perdidos
+- ❌ Usuário volta ao projeto → canvas vazio
+- ❌ Auto-save não funciona para flows com 0 nodes
+- ❌ Remoção de todos os nodes não é persistida
+
+**Impacto:** **CRÍTICO** - Perda total de dados do usuário ao navegar entre projetos
+
 ## 🔍 Diagnóstico e Investigação
 
 ### Passos Seguidos:
@@ -282,6 +310,50 @@ const useFolders = () => ({
 });
 ```
 
+### 14. 🔥 HOTFIX: Canvas Auto-Save Bug Resolution
+**Problema Identificado:** Condição restritiva bloqueava salvamento de flows vazios
+
+**Solução Aplicada:**
+```typescript
+// ANTES (PROBLEMÁTICO) - Linha 109 useCanvasSync.ts
+const saveToConvex = useCallback(async () => {
+  if (!activeFlowId || !currentProject || nodes.length === 0) {
+    console.log('⚠️ Skipping save: no flow, project, or empty nodes');
+    return;
+  }
+  // ... resto da função
+}, [activeFlowId, currentProject, nodes, edges, viewport, saveBatchFlow]);
+
+// DEPOIS (CORRIGIDO)
+const saveToConvex = useCallback(async () => {
+  if (!activeFlowId || !currentProject) {
+    console.log('⚠️ Skipping save: no flow or project');
+    return;
+  }
+  // ... resto da função (mesmo código)
+}, [activeFlowId, currentProject, nodes, edges, viewport, saveBatchFlowData]);
+```
+
+**Mudanças Específicas:**
+1. **Removida condição:** `|| nodes.length === 0`
+2. **Corrigido nome da função:** `saveBatchFlow` → `saveBatchFlowData`
+3. **Simplificada lógica:** Apenas verificar se flow e projeto existem
+
+**Impacto da Correção:**
+- ✅ **Flows vazios agora salvam:** Quando usuário remove todos os nodes
+- ✅ **Auto-save universal:** Funciona com qualquer quantidade de nodes (0, 1, 100+)
+- ✅ **Persistência garantida:** Troca de projetos não perde dados
+- ✅ **Estados intermediários:** Salvamento contínuo durante edição
+- ✅ **UX melhorado:** Usuário nunca perde trabalho
+
+**Teste de Validação:**
+```bash
+# 1. Criar fluxo com nodes
+# 2. Trocar para outro projeto  
+# 3. Voltar ao projeto original
+# 4. ✅ Fluxo deve estar salvo e carregado
+```
+
 ## 📚 Lições Aprendidas
 
 ### 1. **Ordem de Configuração é Crítica**
@@ -350,6 +422,47 @@ const useFolders = () => ({
 - **Error Boundaries**: Implementar para capturar problemas
 - **Loading States**: Sempre mostrar feedback visual
 
+### 13. **Canvas Auto-Save Implementation Best Practices**
+- **Condições Mínimas**: Apenas verificar essenciais (flowId, projectId)
+- **Nunca bloquear por conteúdo**: Auto-save deve funcionar com 0 ou N nodes
+- **Estados vazios são válidos**: Usuário pode querer salvar canvas limpo
+- **Debouncing adequado**: 2-3 segundos para evitar spam de requests
+- **Logging detalhado**: Console.log para debug de condições de save
+- **Error handling**: Try/catch em todas as operações async
+- **Feedback visual**: Loading states durante salvamento
+- **Teste casos extremos**: 0 nodes, 1 node, muitos nodes, remoção total
+
+**❌ Anti-patterns para Auto-Save:**
+```typescript
+// NUNCA bloquear por quantidade de conteúdo
+if (nodes.length === 0) return; // ❌ ERRADO
+
+// NUNCA assumir que conteúdo vazio = não salvar
+if (!content || content.length === 0) return; // ❌ ERRADO
+
+// NUNCA ignorar estados de transição
+if (isLoading || isTransitioning) return; // ❌ ERRADO (pode ser válido salvar)
+```
+
+**✅ Boas práticas para Auto-Save:**
+```typescript
+// Apenas verificar dependências essenciais
+if (!flowId || !projectId) return; // ✅ CORRETO
+
+// Sempre salvar, independente do conteúdo
+await saveBatchFlowData({ flowId, nodes, edges, viewport }); // ✅ CORRETO
+
+// Logging para debug
+console.log('💾 Saving:', { flowId, nodes: nodes.length, edges: edges.length }); // ✅ CORRETO
+```
+
+**🎯 Testes Obrigatórios para Auto-Save:**
+1. **Teste de Canvas Vazio**: Criar projeto → não adicionar nada → trocar projeto → voltar
+2. **Teste de Adição**: Adicionar nodes → trocar projeto → voltar
+3. **Teste de Remoção**: Adicionar nodes → remover todos → trocar projeto → voltar
+4. **Teste de Edição**: Modificar nodes existentes → trocar projeto → voltar
+5. **Teste de Conexões**: Criar edges → trocar projeto → voltar
+
 ## 🛠️ Processo de Debug Recomendado
 
 ### Para Problemas de Módulo Convex:
@@ -391,6 +504,47 @@ const useFolders = () => ({
 2. **Localizar package.json**: Deve estar no diretório de trabalho
 3. **Verificar .env**: Arquivos de configuração no local correto
 4. **Testar comandos**: CLI tools do diretório correto
+
+### Para Problemas de Auto-Save (Canvas):
+1. **Verificar condições de save**: 
+   ```typescript
+   console.log('🔍 Save check:', { 
+     activeFlowId: !!activeFlowId, 
+     currentProject: !!currentProject,
+     nodes: nodes.length,
+     hasUnsavedChanges 
+   });
+   ```
+2. **Testar salvamento manual**: Chamar `manualSave()` e verificar se funciona
+3. **Verificar debouncing**: Auto-save pode estar sendo cancelado por mudanças rápidas
+4. **Testar backend**: Usar CLI do Convex para verificar se dados chegam ao banco
+5. **Verificar dependencies**: Array de dependências do useCallback pode estar incorreto
+6. **Testar casos extremos**: Canvas vazio, 1 node, muitos nodes
+7. **Verificar loading states**: isLoading pode estar interferindo
+8. **Logs de network**: DevTools → Network → verificar requests para Convex
+
+**🔧 Comandos de Debug para Auto-Save:**
+```bash
+# Verificar se função existe no backend
+npx convex run flows:saveBatchFlowData --help
+
+# Testar salvamento manual via CLI
+npx convex run flows:saveBatchFlowData '{"flowId": "...", "nodes": [], "edges": [], "viewport": {"x": 0, "y": 0, "zoom": 1}}'
+
+# Verificar flows existentes
+npx convex run flows:getCompleteFlowSimple '{"projectId": "..."}'
+```
+
+**🎯 Checklist de Auto-Save:**
+- [ ] Condições mínimas apenas (flowId + projectId)
+- [ ] Sem verificações de conteúdo (nodes.length, etc)
+- [ ] Try/catch em todas as operações async
+- [ ] Logging detalhado com emojis para debug
+- [ ] Debouncing configurado (2-3 segundos)
+- [ ] Dependencies do useCallback corretas
+- [ ] Teste manual funciona
+- [ ] Teste com 0 nodes funciona
+- [ ] Teste com muitos nodes funciona
 
 ## 🎯 Resultados Alcançados
 
