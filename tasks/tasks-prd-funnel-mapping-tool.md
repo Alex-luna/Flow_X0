@@ -271,24 +271,30 @@
     - [x] 9.2.4 Add error handling and retry logic for failed operations
     - [x] 9.2.5 Create useProjectSync hook for canvas-project synchronization
     - [ ] 9.2.6 Add loading states and caching mechanisms
-  - [x] 9.3 Build Complete Modal System for CRUD Operations
+  - [ ] 9.3 Build Complete Modal System for CRUD Operations
     - [x] 9.3.1 Create components/modals/ directory structure
     - [x] 9.3.2 Build CreateFolderModal with name validation and color picker
     - [x] 9.3.3 Build CreateProjectModal with folder selection and template options
-    - [ ] 9.3.4 Build EditProjectModal with all project properties
-    - [x] 9.3.5 Build DeleteConfirmModal with warning messages and confirmation
-    - [x] 9.3.6 Integrate modals into Header.tsx and fix real data synchronization - COMPLETED: Fixed hooks to use real Convex data, updated modals to call actual mutations, integrated Header with real-time data display
-    - [ ] 9.3.7 Fix modal positioning and prevent element overflow
-    - [ ] 9.3.8 Add keyboard navigation and accessibility features
-    - [ ] 9.3.9 Implement modal state management and proper cleanup
+    - [x] 9.3.4 Build EditProjectModal with all project properties (name, description, folder, status, priority)
+    - [x] 9.3.5 Build EditFolderModal for editing folder name and color
+    - [x] 9.3.6 Build DeleteConfirmModal with warning messages and confirmation
+    - [x] 9.3.7 Integrate modals into Header.tsx and fix real data synchronization - COMPLETED: Fixed hooks to use real Convex data, updated modals to call actual mutations, integrated Header with real-time data display
+    - [ ] 9.3.8 Fix project creation folder assignment (projects not being assigned to selected folder)
+    - [ ] 9.3.9 Fix modal positioning and prevent element overflow
+    - [ ] 9.3.10 Add keyboard navigation and accessibility features
+    - [ ] 9.3.11 Implement modal state management and proper cleanup
   - [ ] 9.4 Implement Real Project Selection and Canvas Integration
-    - [ ] 9.4.1 Update ProjectContext to use real Convex data
-    - [ ] 9.4.2 Implement canvas data loading based on selected project
-    - [ ] 9.4.3 Create project switching functionality with auto-save
-    - [ ] 9.4.4 Update Canvas component to respond to project changes
-    - [ ] 9.4.5 Implement canvas reset when switching projects
-    - [ ] 9.4.6 Add loading indicators during project switching
-    - [ ] 9.4.7 Handle edge cases like deleted projects and access errors
+    - [ ] 9.4.1 Update ProjectContext to use real Convex data and project selection
+    - [ ] 9.4.2 Implement project selection dropdown in Header with real data
+    - [ ] 9.4.3 Connect Canvas component to selected project (load/save flows based on project)
+    - [ ] 9.4.4 Create project switching functionality with auto-save
+    - [ ] 9.4.5 Update Canvas component to respond to project changes
+    - [ ] 9.4.6 Implement canvas reset when switching projects
+    - [ ] 9.4.7 Add loading indicators during project switching
+    - [ ] 9.4.8 Handle edge cases like deleted projects and access errors
+    - [x] 9.4.9 Fix Canvas auto-save integration with Convex (flows not being saved) - COMPLETED: Rewritten useCanvasSync to use Convex queries/mutations, added createFlow mutation, implemented real-time flow persistence
+    - [x] 9.4.10 Fix Critical Auto-Save Bug - HOTFIX: Removed nodes.length === 0 condition that was preventing empty flows from being saved
+    - [ ] 9.4.11 Implement real folder filtering in project dropdown
 
 - [ ] 10.0 Create Advanced Project Management Features
   - [ ] 10.1 Implement Advanced Search and Filtering

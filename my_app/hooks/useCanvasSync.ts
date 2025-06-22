@@ -36,7 +36,7 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
     currentProject ? { projectId: currentProject.id as Id<"projects"> } : "skip"
   );
   
-  const saveBatchFlow = useMutation(api.flows.saveBatchFlowData);
+  const saveBatchFlowData = useMutation(api.flows.saveBatchFlowData);
   const createFlowMutation = useMutation(api.flows.createFlow);
 
   // Load flow data when project changes
@@ -118,8 +118,8 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
 
   // Save to Convex
   const saveToConvex = useCallback(async () => {
-    if (!activeFlowId || !currentProject || nodes.length === 0) {
-      console.log('⚠️ Skipping save: no flow, project, or empty nodes');
+    if (!activeFlowId || !currentProject) {
+      console.log('⚠️ Skipping save: no flow or project');
       return;
     }
 
@@ -165,7 +165,7 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
          label: typeof edge.label === 'string' ? edge.label : undefined,
        }));
 
-      await saveBatchFlow({
+      await saveBatchFlowData({
         flowId: activeFlowId,
         nodes: convexNodes,
         edges: convexEdges,
@@ -181,7 +181,7 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
     } finally {
       setIsLoading(false);
     }
-  }, [activeFlowId, currentProject, nodes, edges, viewport, saveBatchFlow]);
+  }, [activeFlowId, currentProject, nodes, edges, viewport, saveBatchFlowData]);
 
   // Auto-save with debouncing
   useEffect(() => {
