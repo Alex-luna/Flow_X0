@@ -2,6 +2,49 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 
+// Mutation to create a new flow for a project
+export const createFlow = mutation({
+  args: {
+    projectId: v.id("projects"),
+    name: v.string(),
+    description: v.optional(v.string()),
+  },
+  returns: v.id("flows"),
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    
+    // Check if project exists
+    const project = await ctx.db.get(args.projectId);
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    // Deactivate any existing active flows for this project
+    const existingFlows = await ctx.db
+      .query("flows")
+      .withIndex("by_project_id_and_active", (q) => 
+        q.eq("projectId", args.projectId).eq("isActive", true))
+      .collect();
+
+    for (const flow of existingFlows) {
+      await ctx.db.patch(flow._id, { isActive: false });
+    }
+
+    // Create new flow
+    const flowId = await ctx.db.insert("flows", {
+      projectId: args.projectId,
+      name: args.name,
+      description: args.description,
+      version: 1,
+      isActive: true,
+      viewport: { x: 0, y: 0, zoom: 1 },
+      lastModified: now,
+    });
+
+    return flowId;
+  },
+});
+
 // Query to get active flow for a project
 export const getActiveFlow = query({
   args: { projectId: v.id("projects") },
