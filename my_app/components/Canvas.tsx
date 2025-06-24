@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState, useMemo } from 'react';
 import ReactFlow, {
   Node,
   Edge,
@@ -30,6 +30,34 @@ import { getSmartNodePosition, getViewportCenter, ViewportInfo } from '../lib/ut
 const nodeTypes = {
   custom: CustomNode,
 };
+
+// Hook personalizado para debounce
+const useDebounce = <T,>(value: T, delay: number): T => {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
+// Tipo para representar bounds de um node
+interface NodeBounds {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  right: number;
+  bottom: number;
+}
 
 // Edge styles will be dynamically generated based on theme
 
@@ -205,7 +233,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
         }
       }
       
-      // Reset connection state
+      // Reset connection state e debounce
       setConnectionInProgress({
         isConnecting: false,
         sourceNode: null,
@@ -213,11 +241,94 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
         hoveredNode: null,
         mousePosition: null,
       });
+      setMousePosition(null); // Reset debounce state
     },
     [connectionInProgress, onConnect, edges, calculateBestTargetHandle]
   );
 
-  // Função para detectar se o mouse está sobre um node
+  // Função para calcular bounds precisos de cada node
+  const getNodeDimensions = useCallback((nodeType: string) => {
+    // Diferentes tipos de nodes têm dimensões diferentes
+    switch (nodeType) {
+      case 'generic':
+      case 'url':
+      case 'signup':
+      case 'checkout':
+      case 'calendar':
+      case 'survey':
+      case 'thankyou':
+      case 'user':
+      case 'post':
+      case 'download':
+      case 'popup':
+      case 'comments':
+      case 'cta1':
+      case 'cta2':
+      case 'cta3':
+        // Funnel steps têm dimensões específicas
+        return { width: 105, height: 175 };
+      default:
+        // Traditional nodes
+        return { width: 80, height: 32 };
+    }
+  }, []);
+
+  // Cache optimizado dos bounds dos nodes usando useMemo
+  const nodesBoundsCache = useMemo(() => {
+    const bounds: NodeBounds[] = [];
+    
+    for (const node of nodes) {
+      const dimensions = getNodeDimensions(node.data.type || 'default');
+      const nodeBounds: NodeBounds = {
+        id: node.id,
+        x: node.position.x,
+        y: node.position.y,
+        width: dimensions.width,
+        height: dimensions.height,
+        right: node.position.x + dimensions.width,
+        bottom: node.position.y + dimensions.height,
+      };
+      bounds.push(nodeBounds);
+    }
+    
+    // Ordenar bounds por posição X para otimizar busca
+    bounds.sort((a, b) => a.x - b.x);
+    
+    return bounds;
+  }, [nodes, getNodeDimensions]);
+
+  // Sistema de spatial grid simples para otimização com muitos nodes
+  const spatialGrid = useMemo(() => {
+    if (nodes.length < 20) {
+      // Para poucos nodes, não vale a pena usar grid
+      return null;
+    }
+
+    const GRID_SIZE = 200; // Tamanho da célula do grid
+    const grid = new Map<string, NodeBounds[]>();
+    
+    for (const bounds of nodesBoundsCache) {
+      // Calcular quais células do grid o node ocupa
+      const startX = Math.floor(bounds.x / GRID_SIZE);
+      const endX = Math.floor(bounds.right / GRID_SIZE);
+      const startY = Math.floor(bounds.y / GRID_SIZE);
+      const endY = Math.floor(bounds.bottom / GRID_SIZE);
+      
+      for (let gridX = startX; gridX <= endX; gridX++) {
+        for (let gridY = startY; gridY <= endY; gridY++) {
+          const key = `${gridX},${gridY}`;
+          if (!grid.has(key)) {
+            grid.set(key, []);
+          }
+          grid.get(key)!.push(bounds);
+        }
+      }
+    }
+    
+    return { grid, gridSize: GRID_SIZE };
+  }, [nodesBoundsCache, nodes.length]);
+
+  // Função otimizada para detectar se o mouse está sobre um node
   const getNodeAtPosition = useCallback(
     (clientX: number, clientY: number) => {
       if (!reactFlowWrapper.current || !reactFlowInstance) return null;
@@ -228,47 +339,84 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
         y: clientY - reactFlowBounds.top,
       });
       
-      // Verificar cada node para ver se o mouse está dentro de suas bounds
-      for (const node of nodes) {
-        const nodeX = node.position.x;
-        const nodeY = node.position.y;
-        // Assumindo dimensões padrão do node (105x175 baseado no Node.tsx)
-        const nodeWidth = 105;
-        const nodeHeight = 175;
+      // Usar spatial grid para muitos nodes (melhora performance)
+      if (spatialGrid) {
+        const gridX = Math.floor(canvasPosition.x / spatialGrid.gridSize);
+        const gridY = Math.floor(canvasPosition.y / spatialGrid.gridSize);
+        const key = `${gridX},${gridY}`;
+        const cellNodes = spatialGrid.grid.get(key) || [];
         
-        if (
-          canvasPosition.x >= nodeX &&
-          canvasPosition.x <= nodeX + nodeWidth &&
-          canvasPosition.y >= nodeY &&
-          canvasPosition.y <= nodeY + nodeHeight
-        ) {
-          return node.id;
+        // Verificar apenas nodes na célula atual
+        for (const bounds of cellNodes) {
+          if (
+            canvasPosition.x >= bounds.x &&
+            canvasPosition.x <= bounds.right &&
+            canvasPosition.y >= bounds.y &&
+            canvasPosition.y <= bounds.bottom
+          ) {
+            return bounds.id;
+          }
+        }
+      } else {
+        // Para poucos nodes, usar busca linear otimizada
+        for (const bounds of nodesBoundsCache) {
+          // Early exit optimization: se X está fora do range, pule
+          if (canvasPosition.x < bounds.x) break; // Lista está ordenada por X
+          if (canvasPosition.x > bounds.right) continue;
+          
+          if (
+            canvasPosition.y >= bounds.y &&
+            canvasPosition.y <= bounds.bottom
+          ) {
+            return bounds.id;
+          }
         }
       }
       
       return null;
     },
-    [reactFlowWrapper, reactFlowInstance, nodes]
+    [reactFlowWrapper, reactFlowInstance, nodesBoundsCache, spatialGrid]
   );
 
-  // Handler para detectar hover sobre nodes durante conexão
+  // Estado para debounce da posição do mouse
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
+  const debouncedMousePosition = useDebounce(mousePosition, 10); // 10ms debounce
+
+  // Handler otimizado para detectar hover sobre nodes durante conexão
   const handleMouseMove = useCallback(
     (event: MouseEvent) => {
       if (!connectionInProgress.isConnecting) return;
       
-      const hoveredNodeId = getNodeAtPosition(event.clientX, event.clientY);
-      
-      if (hoveredNodeId !== connectionInProgress.hoveredNode) {
-        console.log('🎯 Hovering node changed:', hoveredNodeId);
-        setConnectionInProgress(prev => ({
-          ...prev,
-          hoveredNode: hoveredNodeId,
-          mousePosition: { x: event.clientX, y: event.clientY },
-        }));
-      }
+      // Atualizar posição do mouse para debounce
+      setMousePosition({ x: event.clientX, y: event.clientY });
     },
-         [connectionInProgress.isConnecting, connectionInProgress.hoveredNode, getNodeAtPosition]
-   );
+    [connectionInProgress.isConnecting]
+  );
+
+  // Effect para processar mudanças de posição com debounce
+  React.useEffect(() => {
+    if (!connectionInProgress.isConnecting || !debouncedMousePosition) return;
+    
+    // Performance timing para debug
+    const startTime = performance.now();
+    const hoveredNodeId = getNodeAtPosition(debouncedMousePosition.x, debouncedMousePosition.y);
+    const endTime = performance.now();
+    
+    // Log performance apenas se demorar mais que 1ms
+    if (endTime - startTime > 1) {
+      console.log(`🐌 Collision detection took ${(endTime - startTime).toFixed(2)}ms for ${nodes.length} nodes`);
+    }
+    
+    if (hoveredNodeId !== connectionInProgress.hoveredNode) {
+      console.log('🎯 Hovering node changed (debounced):', hoveredNodeId, 
+                  `(${spatialGrid ? 'spatial grid' : 'linear search'})`);
+      setConnectionInProgress(prev => ({
+        ...prev,
+        hoveredNode: hoveredNodeId,
+        mousePosition: debouncedMousePosition,
+      }));
+    }
+  }, [debouncedMousePosition, connectionInProgress.isConnecting, connectionInProgress.hoveredNode, getNodeAtPosition, nodes.length, spatialGrid]);
 
   // Função para atualizar nodes com highlight de conexão
   const highlightedNodes = React.useMemo(() => {

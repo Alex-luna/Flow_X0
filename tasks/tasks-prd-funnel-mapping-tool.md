@@ -405,11 +405,11 @@
 - [x] Adicionar animação suave para conexão automática
 - [x] Implementar estado de "connection preview"
 
-#### **Task 4: Otimizar detecção de collision**
-- [ ] Implementar função para detectar bounds do node
-- [ ] Calcular se posição do mouse está dentro do node
-- [ ] Otimizar performance para múltiplos nodes
-- [ ] Adicionar debounce para evitar flickering
+#### **Task 4: Otimizar detecção de collision** ✅
+- [x] Implementar função para detectar bounds do node
+- [x] Calcular se posição do mouse está dentro do node
+- [x] Otimizar performance para múltiplos nodes
+- [x] Adicionar debounce para evitar flickering
 
 #### **Task 5: Testes e refinamentos**
 - [ ] Testar com diferentes tipos de nodes
