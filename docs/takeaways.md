@@ -424,6 +424,168 @@ if (lastLoadedProject === 'SAVING_BLOCK') {
 # 4. Console deve mostrar: "🛑 New nodes detected" → "✅ Save completed"
 ```
 
+## 🎯 Auto-Conexão de Nodes - Tasks 1, 2 e 3 Implementadas
+
+### **Data**: 2024-12-19
+### **Funcionalidade**: Auto-conexão com feedback visual
+
+#### **Task 1 - Detecção de hover durante conexão** ✅
+
+1. **Novos imports do ReactFlow**:
+   ```typescript
+   import { OnConnectStart, OnConnectEnd } from 'reactflow';
+   ```
+
+2. **Estado para rastrear conexão em progresso**:
+   ```typescript
+   const [connectionInProgress, setConnectionInProgress] = useState<{
+     isConnecting: boolean;
+     sourceNode: string | null;
+     sourceHandle: string | null;
+     hoveredNode: string | null;
+     mousePosition: { x: number; y: number } | null;
+   }>({
+     isConnecting: false,
+     sourceNode: null,
+     sourceHandle: null,
+     hoveredNode: null,
+     mousePosition: null,
+   });
+   ```
+
+3. **Handler onConnectStart**: Detecta quando usuário inicia uma conexão
+4. **Handler onConnectEnd**: Detecta quando usuário termina uma conexão
+5. **Função getNodeAtPosition**: Collision detection
+6. **Handler handleMouseMove**: Rastreia movimento durante conexão
+7. **Event Listener dinâmico**: Adiciona/remove mousemove listener
+8. **Integração com ReactFlow**: Adicionados novos props
+
+#### **Task 2 - Lógica de conexão automática aprimorada** ✅
+
+1. **Função calculateBestTargetHandle**: Calcula handle ideal baseado na posição
+   ```typescript
+   const calculateBestTargetHandle = useCallback(
+     (sourceNodeId: string, targetNodeId: string, sourceHandle: string) => {
+       const sourceNode = nodes.find(n => n.id === sourceNodeId);
+       const targetNode = nodes.find(n => n.id === targetNodeId);
+       
+       // Calcular posições centrais dos nodes
+       const sourceCenterX = sourceNode.position.x + 52.5; // 105/2
+       const targetCenterX = targetNode.position.x + 52.5;
+       
+       // Lógica inteligente baseada na posição relativa
+       if (sourceCenterX < targetCenterX) {
+         return sourceHandle === 'source-right' ? 'target-left' : 'source-right'; 
+       } else {
+         return sourceHandle === 'target-left' ? 'source-right' : 'target-left';
+       }
+     },
+     [nodes]
+   );
+   ```
+
+2. **Prevenção de conexões duplicadas**: Verificação de conexões existentes
+   ```typescript
+   const existingConnection = edges.find(edge => 
+     (edge.source === sourceNode && edge.target === hoveredNode) ||
+     (edge.source === hoveredNode && edge.target === sourceNode)
+   );
+   ```
+
+3. **Logs aprimorados**: Melhor debug e rastreamento
+
+#### **Task 3 - Feedback visual durante conexão** ✅
+
+1. **Interface atualizada do Node**: Adicionada prop `isConnectionTarget`
+   ```typescript
+   interface CustomNodeData {
+     label: string;
+     type: string;
+     color?: string;
+     overlay?: React.ComponentType<any>;
+     isConnectionTarget?: boolean; // Para highlight durante conexão
+   }
+   ```
+
+2. **Estilos visuais para highlight**: 
+   - **Funnel Steps**: Ring verde pulsante com scale transform
+   - **Traditional Nodes**: Border verde com ring e scale
+   ```css
+   ring-4 ring-green-400 ring-offset-2 shadow-lg transform scale-105 animate-pulse
+   ```
+
+3. **highlightedNodes useMemo**: Atualização reativa dos nodes
+   ```typescript
+   const highlightedNodes = React.useMemo(() => {
+     if (!connectionInProgress.isConnecting || !connectionInProgress.hoveredNode) {
+       return nodes;
+     }
+     
+     return nodes.map(node => ({
+       ...node,
+       data: {
+         ...node.data,
+         isConnectionTarget: node.id === connectionInProgress.hoveredNode && 
+                           node.id !== connectionInProgress.sourceNode
+       }
+     }));
+   }, [nodes, connectionInProgress.isConnecting, connectionInProgress.hoveredNode, connectionInProgress.sourceNode]);
+   ```
+
+4. **Integração com ReactFlow**: `nodes={highlightedNodes}`
+
+#### **Como funciona a experiência completa:**
+1. **Início**: Usuário clica e arrasta handle → highlight inicia
+2. **Durante**: Mouse move detecta nodes → highlight verde pulsante em tempo real  
+3. **Prevenção**: Sistema verifica conexões duplicadas automaticamente
+4. **Inteligência**: Calcula melhor handle baseado na posição relativa
+5. **Finalização**: Conexão automática + reset de estados + feedback visual
+
+#### **Benefícios alcançados:**
+- ✅ **UX intuitiva**: Feedback visual claro e imediato
+- ✅ **Conexões inteligentes**: Handle selection baseado na geometria
+- ✅ **Prevenção de erros**: Evita conexões duplicadas
+- ✅ **Performance otimizada**: useMemo para evitar re-renders desnecessários
+- ✅ **Animações suaves**: Transições CSS com transform e animate-pulse
+- ✅ **Compatibilidade total**: Funciona com funnel steps e traditional nodes
+
+#### **Próximos passos:**
+- Task 4: Otimizações de collision detection
+- Task 5: Testes e refinamentos
+
+### **Lições aprendidas:**
+1. **ReactFlow oferece hooks poderosos** para interceptar conexões
+2. **Collision detection** precisa considerar viewport transform
+3. **Event listeners globais** devem ser gerenciados cuidadosamente
+4. **Estado reativo** permite UX fluida sem rerender excessivo
+5. **Logs estratégicos** são essenciais para debug de interações complexas
+6. **CSS transforms + animate-pulse** criam feedback visual profissional
+7. **useMemo é crítico** para performance em componentes que re-renderizam frequentemente
+8. **Geometria simples** pode resolver problemas complexos de UX
+
+---
+
+## Outros Takeaways
+
+### Performance Optimization
+- Smart positioning evita sobreposição de nodes
+- Lazy loading de componentes com dynamic import
+- Otimização de re-renders com useMemo e useCallback
+- useMemo para highlightedNodes evita recalculos desnecessários
+
+### State Management
+- Convex sync hook para persistência automática
+- Context providers para estado global
+- Local state para interações de UI
+- Estado de conexão centralizado para coordenação
+
+### User Experience  
+- Snap to grid para alinhamento preciso
+- Visual feedback com indicadores de status
+- Keyboard shortcuts para produtividade
+- Feedback visual imediato durante interações
+- Animações CSS otimizadas para performance
+
 ## 📚 Lições Aprendidas
 
 ### 1. **Ordem de Configuração é Crítica**

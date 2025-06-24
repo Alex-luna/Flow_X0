@@ -54,6 +54,7 @@ interface CustomNodeData {
   type: string;
   color?: string;
   overlay?: React.ComponentType<any>;
+  isConnectionTarget?: boolean; // Para highlight durante conexão
 }
 
 interface CustomNodeProps extends NodeProps {
@@ -118,10 +119,12 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, xP
       <div className="relative" style={{ width: '105px', height: '175px' }}>
         {/* Main container - this will be the target for the selection ring */}
         <div 
-          className={`relative w-[105px] h-[135px] bg-transparent cursor-pointer transition-all duration-200 focus:outline-none ${
-            selected 
-              ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent rounded-lg' 
-              : 'hover:ring-1 hover:ring-gray-300 hover:ring-offset-1 hover:ring-offset-transparent rounded-lg'
+          className={`relative w-[105px] h-[135px] bg-transparent cursor-pointer transition-all duration-200 focus:outline-none rounded-lg ${
+            data.isConnectionTarget
+              ? 'ring-4 ring-green-400 ring-offset-2 ring-offset-transparent shadow-lg transform scale-105 animate-pulse'
+              : selected 
+                ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent' 
+                : 'hover:ring-1 hover:ring-gray-300 hover:ring-offset-1 hover:ring-offset-transparent'
           }`}
           onDoubleClick={() => setEditing(true)}
           onKeyDown={handleKeyDown}
@@ -209,9 +212,11 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, xP
       {/* Main node container */}
       <div 
         className={`relative w-20 h-8 px-2 py-1 bg-white border-2 rounded shadow-sm transition-all duration-200 flex items-center justify-center focus:outline-none ${
-          selected 
-            ? 'border-blue-500 shadow-lg ring-2 ring-blue-500 ring-offset-2 ring-offset-white/50' 
-            : 'border-gray-200 hover:border-gray-300 hover:shadow-md hover:ring-1 hover:ring-gray-300 hover:ring-offset-1'
+          data.isConnectionTarget
+            ? 'border-green-400 shadow-lg ring-4 ring-green-400 ring-offset-2 ring-offset-white/50 transform scale-110 animate-pulse'
+            : selected 
+              ? 'border-blue-500 shadow-lg ring-2 ring-blue-500 ring-offset-2 ring-offset-white/50' 
+              : 'border-gray-200 hover:border-gray-300 hover:shadow-md hover:ring-1 hover:ring-gray-300 hover:ring-offset-1'
         }`}
         style={{ backgroundColor: color }}
         onDoubleClick={() => setEditing(true)}

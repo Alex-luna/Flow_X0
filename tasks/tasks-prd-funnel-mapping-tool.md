@@ -383,4 +383,36 @@
     - [x] 13.3.1 Replace existing save status display in Canvas.tsx
     - [x] 13.3.2 Connect SaveStatusIndicator to useCanvasSync hook states
     - [x] 13.3.3 Test indicator behavior with different save scenarios
-    - [x] 13.3.4 Ensure proper theme integration (light/dark modes) 
+    - [x] 13.3.4 Ensure proper theme integration (light/dark modes)
+
+### **NOVA FUNCIONALIDADE: Auto-conexão de Nodes**
+
+#### **Task 1: Implementar detecção de hover durante conexão** ✅
+- [x] Adicionar event listeners para `onConnectStart` no ReactFlow
+- [x] Rastrear estado de "connection in progress" 
+- [x] Implementar lógica para detectar quando usuário arrasta conector sobre um node
+- [x] Armazenar referência do node de destino durante hover
+
+#### **Task 2: Modificar lógica de conexão automática** ✅
+- [x] Implementar `onConnectEnd` personalizado
+- [x] Detectar se o mouse está sobre um node válido (mesmo sem handle preciso)
+- [x] Calcular automaticamente o handle de destino mais próximo
+- [x] Conectar automaticamente ao handle apropriado
+
+#### **Task 3: Melhorar feedback visual durante conexão** ✅
+- [x] Adicionar highlight visual quando hovering sobre node válido
+- [x] Mostrar indicação visual de "drop zone" no node
+- [x] Adicionar animação suave para conexão automática
+- [x] Implementar estado de "connection preview"
+
+#### **Task 4: Otimizar detecção de collision**
+- [ ] Implementar função para detectar bounds do node
+- [ ] Calcular se posição do mouse está dentro do node
+- [ ] Otimizar performance para múltiplos nodes
+- [ ] Adicionar debounce para evitar flickering
+
+#### **Task 5: Testes e refinamentos**
+- [ ] Testar com diferentes tipos de nodes
+- [ ] Validar comportamento com nodes sobrepostos
+- [ ] Testar compatibilidade com snap to grid
+- [ ] Ajustar tolerância de detecção se necessário 

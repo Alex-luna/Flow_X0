@@ -1,0 +1,16 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Use the [tasks-prd-funnel-mapping-tool.md](mdc:tasks/tasks-prd-funnel-mapping-tool.md) as your tasklist base.
+
+Use the [2_generate-tasks.mdc](mdc:.cursor/rules/2_generate-tasks.mdc) if needed to create new tasks.
+
+Use the [takeaways.md](mdc:docs/takeaways.md) to document your archiements and new kloedge when solving problems.
+
+Use the [3_process-task-list.mdc](mdc:.cursor/rules/3_process-task-list.mdc) to develop the project.
+
+When Finished a request from the user, ask if you can create a commit of the changes you made. If he accepts the commit, then ask if you can push to the branch or if you go to another task.
+
+If you need to run a server, go to /my_app first. And then "npm run dev...".

@@ -11,6 +11,8 @@ import ReactFlow, {
   Controls,
   MiniMap,
   OnConnect,
+  OnConnectStart,
+  OnConnectEnd,
   OnNodesChange,
   OnEdgesChange,
   ReactFlowInstance,
@@ -75,6 +77,21 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
   }>({ show: false, x: 0, y: 0, edgeId: null });
   const [showMiniMap, setShowMiniMap] = useState(true);
 
+  // Estado para auto-conexão de nodes
+  const [connectionInProgress, setConnectionInProgress] = useState<{
+    isConnecting: boolean;
+    sourceNode: string | null;
+    sourceHandle: string | null;
+    hoveredNode: string | null;
+    mousePosition: { x: number; y: number } | null;
+  }>({
+    isConnecting: false,
+    sourceNode: null,
+    sourceHandle: null,
+    hoveredNode: null,
+    mousePosition: null,
+  });
+
   // Dynamic edge styles based on theme
   const animatedEdgeStyle = React.useMemo(() => ({
     stroke: theme.colors.canvas.edge,
@@ -109,6 +126,164 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     },
     [setEdges, edgeOptions]
   );
+
+  // Handler para quando inicia uma conexão
+  const onConnectStart: OnConnectStart = useCallback(
+    (event, { nodeId, handleId, handleType }) => {
+      console.log('🔌 Connection started:', { nodeId, handleId, handleType });
+      
+      setConnectionInProgress({
+        isConnecting: true,
+        sourceNode: nodeId,
+        sourceHandle: handleId,
+        hoveredNode: null,
+        mousePosition: null,
+      });
+    },
+    []
+  );
+
+    // Função para calcular o melhor handle de destino baseado na posição relativa
+  const calculateBestTargetHandle = useCallback(
+    (sourceNodeId: string, targetNodeId: string, sourceHandle: string) => {
+      const sourceNode = nodes.find(n => n.id === sourceNodeId);
+      const targetNode = nodes.find(n => n.id === targetNodeId);
+      
+      if (!sourceNode || !targetNode) {
+        // Fallback para lógica simples se nodes não encontrados
+        return sourceHandle === 'source-right' ? 'target-left' : 'source-right';
+      }
+      
+      // Calcular posições centrais dos nodes
+      const sourceCenterX = sourceNode.position.x + 52.5; // 105/2
+      const targetCenterX = targetNode.position.x + 52.5;
+      
+      // Se source node está à esquerda do target, conectar da direita para esquerda
+      if (sourceCenterX < targetCenterX) {
+        return sourceHandle === 'source-right' ? 'target-left' : 'source-right'; 
+      } else {
+        // Se source node está à direita do target, conectar da esquerda para direita
+        return sourceHandle === 'target-left' ? 'source-right' : 'target-left';
+      }
+    },
+    [nodes]
+  );
+
+  // Handler para quando termina uma conexão
+  const onConnectEnd: OnConnectEnd = useCallback(
+    (event) => {
+      console.log('🔌 Connection ended');
+      const { isConnecting, sourceNode, sourceHandle, hoveredNode } = connectionInProgress;
+      
+      if (isConnecting && sourceNode && hoveredNode && sourceNode !== hoveredNode) {
+        // Verificar se já existe uma conexão entre estes nodes
+        const existingConnection = edges.find(edge => 
+          (edge.source === sourceNode && edge.target === hoveredNode) ||
+          (edge.source === hoveredNode && edge.target === sourceNode)
+        );
+        
+        if (existingConnection) {
+          console.log('⚠️ Connection already exists between nodes');
+        } else {
+          // Auto-conectar ao node que está sendo hovered
+          console.log('🎯 Auto-connecting:', { sourceNode, sourceHandle, hoveredNode });
+          
+          // Calcular o melhor handle de destino baseado na posição relativa
+          const targetHandle = calculateBestTargetHandle(sourceNode, hoveredNode, sourceHandle || 'source-right');
+          
+          const connection: Connection = {
+            source: sourceNode,
+            sourceHandle: sourceHandle,
+            target: hoveredNode, 
+            targetHandle: targetHandle,
+          };
+          
+          console.log('🔗 Creating connection:', connection);
+          
+          // Usar o onConnect existente para criar a conexão
+          onConnect(connection);
+        }
+      }
+      
+      // Reset connection state
+      setConnectionInProgress({
+        isConnecting: false,
+        sourceNode: null,
+        sourceHandle: null,
+        hoveredNode: null,
+        mousePosition: null,
+      });
+    },
+    [connectionInProgress, onConnect, edges, calculateBestTargetHandle]
+  );
+
+  // Função para detectar se o mouse está sobre um node
+  const getNodeAtPosition = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!reactFlowWrapper.current || !reactFlowInstance) return null;
+      
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      const canvasPosition = reactFlowInstance.project({
+        x: clientX - reactFlowBounds.left,
+        y: clientY - reactFlowBounds.top,
+      });
+      
+      // Verificar cada node para ver se o mouse está dentro de suas bounds
+      for (const node of nodes) {
+        const nodeX = node.position.x;
+        const nodeY = node.position.y;
+        // Assumindo dimensões padrão do node (105x175 baseado no Node.tsx)
+        const nodeWidth = 105;
+        const nodeHeight = 175;
+        
+        if (
+          canvasPosition.x >= nodeX &&
+          canvasPosition.x <= nodeX + nodeWidth &&
+          canvasPosition.y >= nodeY &&
+          canvasPosition.y <= nodeY + nodeHeight
+        ) {
+          return node.id;
+        }
+      }
+      
+      return null;
+    },
+    [reactFlowWrapper, reactFlowInstance, nodes]
+  );
+
+  // Handler para detectar hover sobre nodes durante conexão
+  const handleMouseMove = useCallback(
+    (event: MouseEvent) => {
+      if (!connectionInProgress.isConnecting) return;
+      
+      const hoveredNodeId = getNodeAtPosition(event.clientX, event.clientY);
+      
+      if (hoveredNodeId !== connectionInProgress.hoveredNode) {
+        console.log('🎯 Hovering node changed:', hoveredNodeId);
+        setConnectionInProgress(prev => ({
+          ...prev,
+          hoveredNode: hoveredNodeId,
+          mousePosition: { x: event.clientX, y: event.clientY },
+        }));
+      }
+    },
+         [connectionInProgress.isConnecting, connectionInProgress.hoveredNode, getNodeAtPosition]
+   );
+
+  // Função para atualizar nodes com highlight de conexão
+  const highlightedNodes = React.useMemo(() => {
+    if (!connectionInProgress.isConnecting || !connectionInProgress.hoveredNode) {
+      return nodes;
+    }
+    
+    return nodes.map(node => ({
+      ...node,
+      data: {
+        ...node.data,
+        isConnectionTarget: node.id === connectionInProgress.hoveredNode && node.id !== connectionInProgress.sourceNode
+      }
+    }));
+  }, [nodes, connectionInProgress.isConnecting, connectionInProgress.hoveredNode, connectionInProgress.sourceNode]);
 
   // Handle edge click - select edge for deletion
   const onEdgeClick = useCallback(
@@ -277,6 +452,20 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
       };
     }
   }, [handleAddNode, onAddNode, reactFlowInstance]);
+
+  // Event listener para mouse move durante conexão
+  React.useEffect(() => {
+    if (connectionInProgress.isConnecting) {
+      document.addEventListener('mousemove', handleMouseMove);
+      console.log('👂 Mouse move listener added for connection tracking');
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove);
+    }
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [connectionInProgress.isConnecting, handleMouseMove]);
 
   // Debug: Global drop listener
   React.useEffect(() => {
@@ -476,16 +665,18 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
         
         <ReactFlow
           key="horizontal-handles-fix-v3"
-          nodes={nodes}
+          nodes={highlightedNodes}
           edges={styledEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
-                  onEdgeClick={onEdgeClick}
-        onEdgeContextMenu={onEdgeContextMenu}
-        onPaneClick={onPaneClick}
-        onInit={setReactFlowInstance}
-        onMove={(event, viewport) => setCurrentViewport(viewport)}
+          onConnectStart={onConnectStart}
+          onConnectEnd={onConnectEnd}
+          onEdgeClick={onEdgeClick}
+          onEdgeContextMenu={onEdgeContextMenu}
+          onPaneClick={onPaneClick}
+          onInit={setReactFlowInstance}
+          onMove={(event, viewport) => setCurrentViewport(viewport)}
 
           nodeTypes={nodeTypes}
           fitView
