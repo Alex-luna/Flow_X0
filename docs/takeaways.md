@@ -354,6 +354,76 @@ const saveToConvex = useCallback(async () => {
 # 4. ✅ Fluxo deve estar salvo e carregado
 ```
 
+### 15. 🚨 CRITICAL: Node Disappearing Bug - Race Condition Fix
+**Erro:** `ArgumentValidationError: Value does not match validator. Path: .flowId`
+
+**Problema:** Race condition entre criação local de nodes e queries reativas do Convex que sobrescreviam estado local.
+
+**Root Cause Identificado:**
+1. **Usuário adiciona node** → setNodes() local
+2. **Convex query reativa dispara** → carrega dados antigos sem o novo node
+3. **useEffect sobrescreve** → estado local perdido
+4. **Node desaparece** → usuário vê node por 1 segundo e depois some
+
+**Sintomas:**
+- ❌ Nodes aparecem por 1 segundo e desaparecem
+- ❌ Auto-save funciona mas dados não persistem visualmente
+- ❌ ID fake sendo criado: `"flow-js7fgj8qgfra0ctngbm8hcv8k57j3ve6"`
+- ❌ Convex espera `Id<"flows">` válido do banco
+
+**Solução Implementada - Sistema de Bloqueio Inteligente:**
+```typescript
+// 1. Detectar novo node e bloquear loading reativo
+if (hasNewNodes && lastLoadedProject !== 'SAVING_BLOCK') {
+  console.log('🛑 New nodes detected, blocking reactive loading');
+  setLastLoadedProject('SAVING_BLOCK');
+  
+  // 2. Trigger immediate save com ID válido do Convex
+  setTimeout(async () => {
+    try {
+      await saveToConvex(); // Usa createFlowMutation para ID válido
+      console.log('✅ Save completed, re-enabling data loading');
+      if (currentProject) {
+        setLastLoadedProject(currentProject.id); // Desbloqueia loading
+      }
+    } catch (error) {
+      console.error('❌ Save failed, re-enabling anyway:', error);
+      if (currentProject) {
+        setLastLoadedProject(currentProject.id);
+      }
+    }
+  }, 100);
+}
+
+// 3. Skip loading durante bloqueio
+if (lastLoadedProject === 'SAVING_BLOCK') {
+  console.log('🛑 Skipping data load - save in progress');
+  return;
+}
+```
+
+**Componentes da Solução:**
+1. **Bloqueio Temporal**: `'SAVING_BLOCK'` previne loading durante save
+2. **IDs Válidos**: Usa `createFlowMutation` em vez de strings fake
+3. **Try/Catch**: Garante desbloqueio mesmo se save falhar
+4. **Timeout**: Permite render local antes do save
+5. **Logs Detalhados**: Debug visual com emojis
+
+**Impacto da Correção:**
+- ✅ **Nodes persistem visualmente:** Não desaparecem após criação
+- ✅ **Race condition resolvida:** Loading reativo não interfere com estado local
+- ✅ **IDs válidos:** Convex aceita todos os IDs gerados
+- ✅ **Auto-save robusto:** Funciona com qualquer cenário
+- ✅ **UX perfeito:** Usuário vê feedback imediato e persistente
+
+**Teste de Validação:**
+```bash
+# 1. Adicionar node do sidebar → deve aparecer imediatamente
+# 2. Node deve permanecer visível (não desaparecer)
+# 3. Trocar de projeto → node deve estar salvo
+# 4. Console deve mostrar: "🛑 New nodes detected" → "✅ Save completed"
+```
+
 ## 📚 Lições Aprendidas
 
 ### 1. **Ordem de Configuração é Crítica**
@@ -431,6 +501,23 @@ const saveToConvex = useCallback(async () => {
 - **Error handling**: Try/catch em todas as operações async
 - **Feedback visual**: Loading states durante salvamento
 - **Teste casos extremos**: 0 nodes, 1 node, muitos nodes, remoção total
+
+### 14. **Race Condition Prevention in Real-Time Apps**
+- **Identificar conflitos**: Estado local vs queries reativas
+- **Sistema de bloqueio**: Flags temporários para prevenir overwrites
+- **IDs válidos**: Sempre usar IDs gerados pelo backend, nunca fake
+- **Timeout estratégico**: Permitir render local antes de operações async
+- **Logging com emojis**: Debug visual para identificar fluxo de execução
+- **Fallback garantido**: Sempre desbloquear mesmo em caso de erro
+- **Teste de race conditions**: Simular operações rápidas e concorrentes
+
+### 15. **Convex Integration Best Practices**
+- **Validação de tipos**: Sempre usar `Id<"tableName">` em vez de strings
+- **Queries condicionais**: Usar "skip" quando dados não estão prontos
+- **Loading states**: Verificar `undefined` vs `null` vs dados reais
+- **Error boundaries**: Implementar para capturar falhas de validação
+- **Mutations vs Queries**: Nunca misturar responsabilidades
+- **Real-time sync**: Considerar conflitos entre estado local e remoto
 
 **❌ Anti-patterns para Auto-Save:**
 ```typescript
@@ -522,6 +609,23 @@ console.log('💾 Saving:', { flowId, nodes: nodes.length, edges: edges.length }
 6. **Testar casos extremos**: Canvas vazio, 1 node, muitos nodes
 7. **Verificar loading states**: isLoading pode estar interferindo
 8. **Logs de network**: DevTools → Network → verificar requests para Convex
+
+### Para Problemas de Race Condition:
+1. **Identificar timing**: 
+   ```typescript
+   console.log('🕐 State change:', { 
+     trigger: 'USER_ACTION', 
+     localState: nodes.length,
+     timestamp: Date.now()
+   });
+   ```
+2. **Rastrear queries reativas**: Verificar quando `useQuery` dispara
+3. **Verificar IDs**: Confirmar se são válidos do Convex ou fake strings
+4. **Testar bloqueio**: Verificar se flags de bloqueio funcionam
+5. **Simular condições**: Adicionar nodes rapidamente e verificar persistência
+6. **Debug useEffect**: Adicionar logs em todos os useEffect que modificam estado
+7. **Verificar dependencies**: Arrays de dependência podem causar loops
+8. **Timeout debugging**: Verificar se timeouts estão executando na ordem correta
 
 **🔧 Comandos de Debug para Auto-Save:**
 ```bash

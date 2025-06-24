@@ -10,7 +10,7 @@
 - `components/Node.tsx` - Blocos/nodes customizáveis com composição de layers corrigida e tamanhos proporcionais.
 - `components/ComposedBlockIcon.tsx` - Componente para composição de ícones base + overlay com z-index correto.
 - `components/icons/` - Diretório com todos os 16 ícones SVG convertidos para React components.
-- `lib/utils/canvasHelpers.ts` - Funções utilitárias para manipulação do canvas e serialização/deserialização de fluxos.
+- `lib/utils/canvasHelpers.ts` - Funções utilitárias para manipulação do canvas, serialização/deserialização de fluxos, e sistema inteligente de posicionamento de nodes (UPDATED).
 - `lib/utils/jsonSchema.ts` - Schema e helpers para exportação/importação JSON (compatível com n8n).
 - `convex/schema.ts` - Enhanced database schema with proper folder-project relationships, soft delete, activity logging, and templates support.
 - `convex/projects.ts` - Mutations e queries para gerenciamento de projetos.
@@ -18,7 +18,8 @@
 - `convex/folders.ts` - Complete CRUD mutations and queries for real folder management with validation, hierarchy support, and soft delete (NEW)
 - `convex/validations.ts` - Comprehensive validation functions for folder names, project data, and all input sanitization (NEW)
 - `hooks/useConvex.ts` - Hook personalizado para integração com Convex backend.
-- `hooks/useCanvasSync.ts` - Hook para auto-save com debouncing e sincronização canvas-Convex.
+- `hooks/useCanvasSync.ts` - Hook original para auto-save com debouncing (DEPRECATED - substituído por useCanvasState).
+- `hooks/useCanvasState.ts` - Novo hook robusto para sincronização canvas-Convex com prevenção completa de race conditions usando refs para controle de estado de loading (NEW).
 - `hooks/useProjects.ts` - Custom hook for project management with real Convex integration (FIXED)
 - `hooks/useFolders.ts` - Custom hook for folder management with real-time updates (FIXED)
 - `contexts/ProjectContext.tsx` - Context para gerenciamento de estado do projeto atual.
@@ -174,13 +175,28 @@
     - [x] 2.10.2 Add keyboard shortcut for edge deletion (Delete/Backspace)
     - [x] 2.10.3 Add visual feedback for edge selection/hover
     - [x] 2.10.4 Implement edge context menu with delete option
-  - [ ] 2.11 Implement Node Properties Panel (PRIORITY 3)
-    - [ ] 2.11.1 Create right sidebar panel component
-    - [ ] 2.11.2 Add node selection state management
-    - [ ] 2.11.3 Implement name editing functionality
-    - [ ] 2.11.4 Add color picker for node customization
-    - [ ] 2.11.5 Add connector direction toggle (horizontal/vertical)
-    - [ ] 2.11.6 Integrate panel with node selection events
+  - [x] 2.11 Implement Smart Node Positioning (PRIORITY 1) - COMPLETED: Sistema inteligente de posicionamento implementado
+    - [x] 2.11.1 Create collision detection utilities in canvasHelpers.ts
+    - [x] 2.11.2 Implement smart positioning algorithm that finds free spaces
+    - [x] 2.11.3 Prioritize positions to the right and down-right of existing nodes
+    - [x] 2.11.4 Use viewport center as fallback when no specific position provided
+    - [x] 2.11.5 Update Canvas drag & drop to use smart positioning
+    - [x] 2.11.6 Update Sidebar click-to-add to use smart positioning
+    - [x] 2.11.7 Add viewport tracking for better positioning context
+  - [x] 2.13 Fix Node Disappearing Bug (CRITICAL FIX) - COMPLETED: Created new useCanvasState hook with robust race condition prevention
+    - [x] 2.13.1 Identify race condition in useCanvasSync where reactive queries overwrite local state
+    - [x] 2.13.2 Create new useCanvasState hook with ref-based loading state tracking
+    - [x] 2.13.3 Implement loading prevention using isLoadingRef to avoid state conflicts
+    - [x] 2.13.4 Add immediate save trigger for new nodes with proper timing
+    - [x] 2.13.5 Update Canvas.tsx to use new hook instead of problematic useCanvasSync
+    - [x] 2.13.6 Separate data loading logic from local state management completely
+  - [ ] 2.12 Implement Node Properties Panel (PRIORITY 3)
+    - [ ] 2.12.1 Create right sidebar panel component
+    - [ ] 2.12.2 Add node selection state management
+    - [ ] 2.12.3 Implement name editing functionality
+    - [ ] 2.12.4 Add color picker for node customization
+    - [ ] 2.12.5 Add connector direction toggle (horizontal/vertical)
+    - [ ] 2.12.6 Integrate panel with node selection events
 
 - [x] 3.0 Add Mini Map for Canvas Navigation
   - [x] 3.1 Implement a mini map component synchronized with the main canvas

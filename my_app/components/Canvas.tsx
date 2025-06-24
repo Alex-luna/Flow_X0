@@ -5,8 +5,6 @@ import ReactFlow, {
   Node,
   Edge,
   addEdge,
-  useNodesState,
-  useEdgesState,
   Connection,
   ReactFlowProvider,
   Background,
@@ -25,6 +23,7 @@ import CustomNode from './Node';
 import { useTheme } from '../contexts/ThemeContext';
 import { useCanvasSync } from '../hooks/useCanvasSync';
 import { SaveStatusIndicator } from './SaveStatusIndicator';
+import { getSmartNodePosition, getViewportCenter, ViewportInfo } from '../lib/utils/canvasHelpers';
 
 const nodeTypes = {
   custom: CustomNode,
@@ -46,27 +45,25 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
   const {
     nodes,
     edges,
-    viewport,
     setNodes,
     setEdges,
-    setViewport,
     isLoading,
     isLoaded,
     lastSaveTime,
     manualSave,
-    hasUnsavedChanges,
     saveStatus,
   } = useCanvasSync();
   
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
+  const [currentViewport, setCurrentViewport] = useState<ViewportInfo>({ x: 0, y: 0, zoom: 1 });
   
   // Create ReactFlow-compatible change handlers using applyNodeChanges and applyEdgeChanges
   const onNodesChange: OnNodesChange = useCallback((changes) => {
-    setNodes((nds) => applyNodeChanges(changes, nds));
+    setNodes((nds: Node[]) => applyNodeChanges(changes, nds));
   }, [setNodes]);
   
   const onEdgesChange: OnEdgesChange = useCallback((changes) => {
-    setEdges((eds) => applyEdgeChanges(changes, eds));
+    setEdges((eds: Edge[]) => applyEdgeChanges(changes, eds));
   }, [setEdges]);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [selectedEdges, setSelectedEdges] = useState<string[]>([]);
@@ -79,24 +76,24 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
   const [showMiniMap, setShowMiniMap] = useState(true);
 
   // Dynamic edge styles based on theme
-  const animatedEdgeStyle = {
+  const animatedEdgeStyle = React.useMemo(() => ({
     stroke: theme.colors.canvas.edge,
     strokeWidth: 2,
     strokeDasharray: '6 4',
-  };
+  }), [theme.colors.canvas.edge]);
 
-  const selectedEdgeStyle = {
+  const selectedEdgeStyle = React.useMemo(() => ({
     stroke: theme.colors.canvas.edgeSelected,
     strokeWidth: 3,
     strokeDasharray: '6 4',
-  };
+  }), [theme.colors.canvas.edgeSelected]);
 
-  const edgeOptions = {
+  const edgeOptions = React.useMemo(() => ({
     animated: true,
     style: animatedEdgeStyle,
     focusable: true,
     deletable: true,
-  };
+  }), [animatedEdgeStyle]);
 
   const onConnect: OnConnect = useCallback(
     (params: Connection) => {
@@ -135,11 +132,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     [selectedEdges, setEdges, setSelectedEdges]
   );
 
-  const onDragOver = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-    console.log('🎯 DragOver event fired');
-  }, []);
+
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
@@ -175,18 +168,29 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
         const dragData = JSON.parse(dragDataString);
         console.log('🎯 Parsed drag data:', dragData);
 
-        const position = reactFlowInstance.project({
+        const dropPosition = reactFlowInstance.project({
           x: event.clientX - reactFlowBounds.left,
           y: event.clientY - reactFlowBounds.top,
         });
 
-        console.log('📍 Drop position:', position, 'from client:', { x: event.clientX, y: event.clientY });
+        console.log('📍 Drop position:', dropPosition, 'from client:', { x: event.clientX, y: event.clientY });
+
+        // Use smart positioning to avoid overlaps
+        const smartPosition = getSmartNodePosition(
+          dragData.type,
+          nodes,
+          currentViewport,
+          dropPosition,
+          snapToGrid
+        );
+
+        console.log('🧠 Smart position calculated:', smartPosition);
 
         // Create new node with proper data structure
         const newNode: Node = {
           id: `${dragData.type}-${Date.now()}`,
           type: 'custom',
-          position,
+          position: smartPosition,
           data: {
             label: dragData.label || dragData.type,
             type: dragData.type,
@@ -220,30 +224,43 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
 
   // Handle programmatic node addition (from click)
   const handleAddNode = useCallback((type: string, position?: { x: number; y: number }) => {
-    const newPosition = position || { x: 250, y: 250 };
+    // Use smart positioning instead of fixed position
+    const preferredPosition = position || getViewportCenter(currentViewport);
     
-    const newNode: Node = {
-      id: `${type}-${Date.now()}`,
-      type: 'custom',
-      position: newPosition,
-      data: {
-        label: type.charAt(0).toUpperCase() + type.slice(1),
-        type: type,
-        color: '#6366F1',
-      },
-    };
+    // Get current nodes for collision detection
+    setNodes((currentNodes: Node[]) => {
+      const smartPosition = getSmartNodePosition(
+        type,
+        currentNodes,
+        currentViewport,
+        preferredPosition,
+        snapToGrid
+      );
+      
+      const newNode: Node = {
+        id: `${type}-${Date.now()}`,
+        type: 'custom',
+        position: smartPosition,
+        data: {
+          label: type.charAt(0).toUpperCase() + type.slice(1),
+          type: type,
+          color: '#6366F1',
+        },
+      };
 
-    console.log('✅ Adding node programmatically:', newNode);
-    setNodes((nds: Node[]) => nds.concat(newNode));
-  }, [setNodes]);
+      console.log('✅ Adding node programmatically:', newNode, 'at smart position:', smartPosition);
+      return currentNodes.concat(newNode);
+    });
+  }, [setNodes, currentViewport, snapToGrid]);
 
   // Pass the handler to parent
   React.useEffect(() => {
-    if (onAddNode) {
-      // Replace the parent's onAddNode with our handler
-      (onAddNode as any).current = handleAddNode;
-      // Also pass ReactFlow instance and wrapper for manual drop calculation
-      (onAddNode as any).getDropPosition = (clientX: number, clientY: number) => {
+    if (onAddNode && typeof onAddNode === 'object') {
+              // Replace the parent's onAddNode with our handler
+        const onAddNodeRef = onAddNode as any;
+        onAddNodeRef.current = handleAddNode;
+        // Also pass ReactFlow instance and wrapper for manual drop calculation
+        onAddNodeRef.getDropPosition = (clientX: number, clientY: number) => {
         if (!reactFlowWrapper.current || !reactFlowInstance) {
           console.warn('⚠️ ReactFlow not ready for position calculation');
           return { x: clientX - 220, y: clientY - 100 };
@@ -449,6 +466,14 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
         onDrop={onWrapperDrop}
         onDragOver={onWrapperDragOver}
       >
+        {/* DEBUG INFO */}
+        {(() => {
+          console.log('🔍 Canvas Render - nodes:', nodes.length, 'data:', nodes);
+          console.log('🔍 Canvas Render - edges:', edges.length);
+          console.log('🔍 Canvas Render - isLoaded:', isLoaded, 'isLoading:', isLoading);
+          return null;
+        })()}
+        
         <ReactFlow
           key="horizontal-handles-fix-v3"
           nodes={nodes}
@@ -456,10 +481,11 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
-          onEdgeClick={onEdgeClick}
-          onEdgeContextMenu={onEdgeContextMenu}
-          onPaneClick={onPaneClick}
-          onInit={setReactFlowInstance}
+                  onEdgeClick={onEdgeClick}
+        onEdgeContextMenu={onEdgeContextMenu}
+        onPaneClick={onPaneClick}
+        onInit={setReactFlowInstance}
+        onMove={(event, viewport) => setCurrentViewport(viewport)}
 
           nodeTypes={nodeTypes}
           fitView

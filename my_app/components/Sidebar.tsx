@@ -103,9 +103,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onAddNode }) => {
         // Use precise ReactFlow position calculation if available
         let position = { x: event.clientX - 220, y: event.clientY - 100 };
         
-        if ((onAddNode as any).getDropPosition) {
-          position = (onAddNode as any).getDropPosition(event.clientX, event.clientY);
-        }
+                  if (onAddNode && typeof onAddNode === 'object' && 'getDropPosition' in onAddNode) {
+            const onAddNodeRef = onAddNode as any;
+            const getDropPosition = onAddNodeRef.getDropPosition;
+            if (typeof getDropPosition === 'function') {
+              position = getDropPosition(event.clientX, event.clientY);
+            }
+          }
         
         onAddNode(draggedItem.type, position);
         console.log('✅ Node added via manual drop:', draggedItem.type, 'at', position);
@@ -120,9 +124,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onAddNode }) => {
 
   const handleClick = (item: BlockItem) => {
     try {
-      // Add node at center of canvas when clicked
-      onAddNode(item.type, { x: 250, y: 250 });
-      console.log('✅ Node added via click:', item.type);
+      // Add node using smart positioning (no fixed position)
+      onAddNode(item.type);
+      console.log('✅ Node added via click:', item.type, '- using smart positioning');
     } catch (error) {
       console.error('❌ Error in handleClick:', error);
     }
