@@ -114,53 +114,42 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, xP
 
   // Renderização para funnel steps
   if (isFunnelStep) {
-    // Calculate responsive icon size (15% of container width)
-    const iconSizeClass = 'w-16 h-16'; // Default size for 105px container
-    const topSpacing = '30px'; // 30/135 = ~22% from top
-    const bottomSpacing = '40px'; // 40/135 = ~30% from bottom
-
     return (
-      <div className="relative">
-        {/* SVG positioned behind everything */}
-        <div className="absolute inset-0 w-[105px] h-[135px] z-0" style={{ marginTop: '8px', marginBottom: '32px' }}>
-          {/* Base screen icon - scaled to exact container size */}
-          <ScreenIcon 
-            className="w-full h-full" 
-            style={{ 
-              width: '105px', 
-              height: '135px',
-              display: 'block'
-            }} 
-          />
-          
-          {/* Overlay icon - positioned within the screen content area */}
-          {overlayIcon && (
-            <div className="absolute inset-0 flex items-center justify-center" style={{ top: '25px', bottom: '35px' }}>
-              <div className="w-20 h-20 flex items-center justify-center">
-                {React.createElement(overlayIcon, { className: "w-full h-full" })}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Selection ring */}
-        {selected && (
-          <div className="absolute -inset-1 bg-blue-500 rounded-lg opacity-20 z-10" style={{ marginTop: '7px', marginBottom: '31px' }} />
-        )}
-        
-        {/* Invisible clickable container - maintains functionality */}
+      <div className="relative" style={{ width: '105px', height: '175px' }}>
+        {/* Main container - this will be the target for the selection ring */}
         <div 
-          className={`relative w-[105px] h-[135px] bg-transparent cursor-pointer transition-all duration-200 ${
+          className={`relative w-[105px] h-[135px] bg-transparent cursor-pointer transition-all duration-200 focus:outline-none ${
             selected 
-              ? 'ring-2 ring-blue-500 ring-offset-2' 
-              : ''
+              ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent rounded-lg' 
+              : 'hover:ring-1 hover:ring-gray-300 hover:ring-offset-1 hover:ring-offset-transparent rounded-lg'
           }`}
           onDoubleClick={() => setEditing(true)}
           onKeyDown={handleKeyDown}
-          style={{ marginTop: '8px', marginBottom: '32px', zIndex: 20 }}
+          style={{ marginTop: '8px' }}
           tabIndex={0}
           ref={nodeRef}
         >
+          {/* SVG positioned inside the main container */}
+          <div className="absolute inset-0 w-[105px] h-[135px] z-0">
+            {/* Base screen icon - scaled to exact container size */}
+            <ScreenIcon 
+              className="w-full h-full" 
+              style={{ 
+                width: '105px', 
+                height: '135px',
+                display: 'block'
+              }} 
+            />
+            
+            {/* Overlay icon - positioned within the screen content area */}
+            {overlayIcon && (
+              <div className="absolute inset-0 flex items-center justify-center" style={{ top: '25px', bottom: '35px' }}>
+                <div className="w-20 h-20 flex items-center justify-center">
+                  {React.createElement(overlayIcon, { className: "w-full h-full" })}
+                </div>
+              </div>
+            )}
+          </div>
           {/* Connection handles - ALWAYS visible with high z-index */}
           <Handle
             id="target-left"
@@ -192,8 +181,8 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, xP
           />
         </div>
 
-        {/* Label container - positioned outside with proper spacing */}
-        <div className="absolute -bottom-10 left-0 right-0 z-[10000]">
+        {/* Label container - positioned below with proper spacing */}
+        <div className="absolute left-0 right-0 z-[10000]" style={{ top: '151px' }}>
           {editing ? (
             <input
               type="text"
@@ -217,21 +206,18 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, xP
   // Renderização para blocos tradicionais
   return (
     <div className="relative">
-      {/* Selection ring */}
-      {selected && (
-        <div className="absolute -inset-1 bg-blue-500 rounded opacity-20 z-0" />
-      )}
-      
       {/* Main node container */}
       <div 
-        className={`relative w-20 h-8 px-2 py-1 bg-white border-2 rounded shadow-sm transition-all duration-200 flex items-center justify-center ${
+        className={`relative w-20 h-8 px-2 py-1 bg-white border-2 rounded shadow-sm transition-all duration-200 flex items-center justify-center focus:outline-none ${
           selected 
-            ? 'border-blue-500 shadow-lg ring-2 ring-blue-200' 
-            : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+            ? 'border-blue-500 shadow-lg ring-2 ring-blue-500 ring-offset-2 ring-offset-white/50' 
+            : 'border-gray-200 hover:border-gray-300 hover:shadow-md hover:ring-1 hover:ring-gray-300 hover:ring-offset-1'
         }`}
         style={{ backgroundColor: color }}
         onDoubleClick={() => setEditing(true)}
         onKeyDown={handleKeyDown}
+        tabIndex={0}
+        ref={nodeRef}
       >
         {editing ? (
           <input
