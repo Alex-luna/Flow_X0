@@ -141,6 +141,30 @@ export default defineSchema({
         url: v.optional(v.string()),
         redirectUrl: v.optional(v.string()),
         conversionGoal: v.optional(v.string()),
+        // URL Preview properties
+        urlPreview: v.optional(v.object({
+          title: v.optional(v.string()),
+          description: v.optional(v.string()),
+          thumbnail: v.optional(v.string()), // Base64 or URL
+          favicon: v.optional(v.string()),
+          lastFetched: v.optional(v.number()),
+          fetchError: v.optional(v.string()),
+        })),
+        // Image properties
+        image: v.optional(v.object({
+          url: v.optional(v.string()), // Image URL
+          uploadedFile: v.optional(v.string()), // Base64 or file ID
+          thumbnail: v.optional(v.string()), // Thumbnail for preview
+          alt: v.optional(v.string()), // Alt text
+          caption: v.optional(v.string()), // Image caption
+          dimensions: v.optional(v.object({
+            width: v.number(),
+            height: v.number(),
+          })),
+          fileSize: v.optional(v.number()), // File size in bytes
+          mimeType: v.optional(v.string()), // MIME type
+          lastModified: v.optional(v.number()),
+        })),
         customFields: v.optional(v.array(v.object({
           key: v.string(),
           value: v.string(),

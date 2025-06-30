@@ -697,14 +697,66 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     }
   }, [activeFlowId, saveNodeMutation, setNodes]); // Simplified dependencies
 
-  // Use a ref to store the handler without causing re-renders
+  // Handle full node data updates (for URL, Image, and other properties)
+  const handleNodeUpdate = useCallback(async (nodeId: string, newData: any) => {
+    if (!activeFlowId) return;
+    
+    try {
+      // Find the node to update in current nodes
+      const nodeToUpdate = nodes.find(n => n.id === nodeId);
+      if (!nodeToUpdate) return;
+
+      // Update local state immediately for responsive UI
+      setNodes((prevNodes: Node[]) => 
+        prevNodes.map(node => 
+          node.id === nodeId 
+            ? { ...node, data: newData }
+            : node
+        )
+      );
+
+      // Save to server
+      const updateData = {
+        flowId: activeFlowId,
+        nodeId: nodeId,
+        type: nodeToUpdate.type || 'custom',
+        position: nodeToUpdate.position,
+        data: newData
+      };
+      
+      await saveNodeMutation(updateData);
+      console.log('✅ Node updated successfully:', nodeId, newData);
+    } catch (error) {
+      console.error('❌ Failed to save node data:', error);
+      
+      // Revert local state on error - keep original data
+      const originalNode = nodes.find(n => n.id === nodeId);
+      if (originalNode) {
+        setNodes((prevNodes: Node[]) => 
+          prevNodes.map(node => 
+            node.id === nodeId 
+              ? { ...node, data: originalNode.data } // Revert to original
+              : node
+          )
+        );
+      }
+    }
+  }, [activeFlowId, saveNodeMutation, setNodes, nodes]);
+
+  // Use a ref to store the handlers without causing re-renders
   const handlerRef = useRef(handleNodeLabelUpdate);
+  const nodeUpdateRef = useRef(handleNodeUpdate);
   handlerRef.current = handleNodeLabelUpdate;
+  nodeUpdateRef.current = handleNodeUpdate;
 
   // Create stable nodeTypes that never change
   const stableNodeTypes = useMemo(() => ({
     custom: (props: any) => (
-      <CustomNode {...props} onLabelUpdate={(id: string, label: string) => handlerRef.current(id, label)} />
+      <CustomNode 
+        {...props} 
+        onLabelUpdate={(id: string, label: string) => handlerRef.current(id, label)}
+        onNodeUpdate={(id: string, newData: any) => nodeUpdateRef.current(id, newData)}
+      />
     )
   }), []); // Empty dependencies - never recreated
 

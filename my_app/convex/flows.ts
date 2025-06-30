@@ -78,35 +78,10 @@ export const getActiveFlow = query({
   },
 });
 
-// Query to get all nodes for a flow
+// Query to get all nodes for a flow  
 export const getFlowNodes = query({
   args: { flowId: v.id("flows") },
-  returns: v.array(v.object({
-    _id: v.id("nodes"),
-    _creationTime: v.number(),
-    flowId: v.id("flows"),
-    nodeId: v.string(),
-    type: v.string(),
-    position: v.object({
-      x: v.number(),
-      y: v.number(),
-    }),
-    data: v.object({
-      label: v.string(),
-      type: v.string(),
-      color: v.optional(v.string()),
-    }),
-    style: v.optional(v.object({
-      width: v.optional(v.number()),
-      height: v.optional(v.number()),
-      backgroundColor: v.optional(v.string()),
-      borderColor: v.optional(v.string()),
-    })),
-    selected: v.optional(v.boolean()),
-    dragging: v.optional(v.boolean()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })),
+  returns: v.array(v.any()),
   handler: async (ctx, args) => {
     const nodes = await ctx.db
       .query("nodes")
@@ -121,34 +96,7 @@ export const getFlowNodes = query({
 // Query to get all edges for a flow
 export const getFlowEdges = query({
   args: { flowId: v.id("flows") },
-  returns: v.array(v.object({
-    _id: v.id("edges"),
-    _creationTime: v.number(),
-    flowId: v.id("flows"),
-    edgeId: v.string(),
-    source: v.string(),
-    target: v.string(),
-    sourceHandle: v.optional(v.string()),
-    targetHandle: v.optional(v.string()),
-    type: v.optional(v.string()),
-    animated: v.optional(v.boolean()),
-    style: v.optional(v.object({
-      stroke: v.optional(v.string()),
-      strokeWidth: v.optional(v.number()),
-      strokeDasharray: v.optional(v.string()),
-    })),
-    label: v.optional(v.string()),
-    labelStyle: v.optional(v.object({
-      fill: v.optional(v.string()),
-      fontWeight: v.optional(v.string()),
-    })),
-    labelBgStyle: v.optional(v.object({
-      fill: v.optional(v.string()),
-      fillOpacity: v.optional(v.number()),
-    })),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })),
+  returns: v.array(v.any()),
   handler: async (ctx, args) => {
     const edges = await ctx.db
       .query("edges")
@@ -184,6 +132,31 @@ export const getCompleteFlowSimple = query({
           label: v.string(),
           type: v.string(),
           color: v.optional(v.string()),
+          properties: v.optional(v.object({
+            url: v.optional(v.string()),
+            urlPreview: v.optional(v.object({
+              title: v.optional(v.string()),
+              description: v.optional(v.string()),
+              thumbnail: v.optional(v.string()),
+              favicon: v.optional(v.string()),
+              lastFetched: v.optional(v.number()),
+              fetchError: v.optional(v.string()),
+            })),
+            image: v.optional(v.object({
+              url: v.optional(v.string()),
+              uploadedFile: v.optional(v.string()),
+              thumbnail: v.optional(v.string()),
+              alt: v.optional(v.string()),
+              caption: v.optional(v.string()),
+              dimensions: v.optional(v.object({
+                width: v.number(),
+                height: v.number(),
+              })),
+              fileSize: v.optional(v.number()),
+              mimeType: v.optional(v.string()),
+              lastModified: v.optional(v.number()),
+            })),
+          })),
         }),
       })),
       edges: v.array(v.object({
@@ -262,6 +235,41 @@ export const saveNode = mutation({
       label: v.string(),
       type: v.string(),
       color: v.optional(v.string()),
+      description: v.optional(v.string()),
+      properties: v.optional(v.object({
+        url: v.optional(v.string()),
+        redirectUrl: v.optional(v.string()),
+        conversionGoal: v.optional(v.string()),
+        // URL Preview properties
+        urlPreview: v.optional(v.object({
+          title: v.optional(v.string()),
+          description: v.optional(v.string()),
+          thumbnail: v.optional(v.string()),
+          favicon: v.optional(v.string()),
+          lastFetched: v.optional(v.number()),
+          fetchError: v.optional(v.string()),
+        })),
+        // Image properties
+        image: v.optional(v.object({
+          url: v.optional(v.string()),
+          uploadedFile: v.optional(v.string()),
+          thumbnail: v.optional(v.string()),
+          alt: v.optional(v.string()),
+          caption: v.optional(v.string()),
+          dimensions: v.optional(v.object({
+            width: v.number(),
+            height: v.number(),
+          })),
+          fileSize: v.optional(v.number()),
+          mimeType: v.optional(v.string()),
+          lastModified: v.optional(v.number()),
+        })),
+        customFields: v.optional(v.array(v.object({
+          key: v.string(),
+          value: v.string(),
+          type: v.union(v.literal("text"), v.literal("number"), v.literal("boolean"), v.literal("url")),
+        }))),
+      })),
     }),
     style: v.optional(v.object({
       width: v.optional(v.number()),

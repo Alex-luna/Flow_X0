@@ -6,6 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 // Import all funnel step icons
 import UrlIcon from './icons/UrlIcon';
 import GenericIcon from './icons/GenericIcon';
+import ImageIcon from './icons/ImageIcon';
 import DownloadIcon from './icons/DownloadIcon';
 import SignupIcon from './icons/SignupIcon';
 import CheckoutIcon from './icons/CheckoutIcon';
@@ -41,6 +42,7 @@ interface BlockItem {
 const funnelSteps: BlockItem[] = [
   { id: 'url', type: 'url', label: 'URL', icon: UrlIcon },
   { id: 'generic', type: 'generic', label: 'Generic', icon: GenericIcon },
+  { id: 'image', type: 'image', label: 'Image', icon: ImageIcon },
   { id: 'download', type: 'download', label: 'Download', icon: DownloadIcon },
   { id: 'signup', type: 'signup', label: 'Sign Up', icon: SignupIcon },
   { id: 'checkout', type: 'checkout', label: 'Checkout', icon: CheckoutIcon },

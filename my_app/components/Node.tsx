@@ -1,14 +1,41 @@
 "use client";
 
 import React, { memo, useState } from 'react';
+
+// Type interfaces
+interface UrlPreviewData {
+  title?: string;
+  description?: string;
+  thumbnail?: string;
+  favicon?: string;
+  lastFetched?: number;
+  fetchError?: string;
+}
+
+interface CustomImageData {
+  url?: string;
+  uploadedFile?: string | null;
+  thumbnail?: string | null;
+  alt?: string;
+  caption?: string;
+  dimensions?: {
+    width: number;
+    height: number;
+  };
+  fileSize?: number;
+  mimeType?: string;
+  lastModified?: number;
+}
+
 import { Handle, Position, NodeProps } from 'reactflow';
-import ComposedBlockIcon from './ComposedBlockIcon';
+
 import ScreenIcon from './icons/ScreenIcon';
 import UrlIcon from './icons/UrlIcon';
 import SurveyIcon from './icons/SurveyIcon';
 import SignupIcon from './icons/SignupIcon';
 import CheckoutIcon from './icons/CheckoutIcon';
 import GenericIcon from './icons/GenericIcon';
+import ImageIcon from './icons/ImageIcon';
 import CalendarIcon from './icons/CalendarIcon';
 import ThankyouIcon from './icons/ThankyouIcon';
 import UserIcon from './icons/UserIcon';
@@ -29,6 +56,11 @@ import PentagonIcon from './icons/PentagonIcon';
 import HexagonIcon from './icons/HexagonIcon';
 import StarIcon from './icons/StarIcon';
 
+// Import modals
+import UrlConfigModal from './modals/UrlConfigModal';
+import ImageConfigModal from './modals/ImageConfigModal';
+import ImageViewerModal from './modals/ImageViewerModal';
+
 const COLORS = [
   '#6366F1', // indigo (padrão)
   '#2563eb', // azul
@@ -39,11 +71,36 @@ const COLORS = [
   '#fbbf24', // amarelo
 ];
 
+// Gear Icon Component
+const GearIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg 
+    className={className} 
+    fill="none" 
+    stroke="currentColor" 
+    viewBox="0 0 24 24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      strokeWidth={2} 
+      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+    />
+    <path 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      strokeWidth={2} 
+      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+    />
+  </svg>
+);
+
 // Mapeamento de tipos para ícones
-const ICON_MAP: Record<string, React.ComponentType<any>> = {
+const ICON_MAP: Record<string, React.ComponentType> = {
   // Funnel steps
   url: UrlIcon,
   generic: GenericIcon,
+  image: ImageIcon,
   download: DownloadIcon,
   signup: SignupIcon,
   checkout: CheckoutIcon,
@@ -71,19 +128,49 @@ interface CustomNodeData {
   label: string;
   type: string;
   color?: string;
-  overlay?: React.ComponentType<any>;
+  overlay?: React.ComponentType;
   isConnectionTarget?: boolean; // Para highlight durante conexão
+  // Extended properties for URL and Image nodes
+  properties?: {
+    url?: string;
+    urlPreview?: {
+      title?: string;
+      description?: string;
+      thumbnail?: string;
+      favicon?: string;
+      lastFetched?: number;
+      fetchError?: string;
+    };
+    image?: {
+      url?: string;
+      uploadedFile?: string;
+      thumbnail?: string;
+      alt?: string;
+      caption?: string;
+      dimensions?: {
+        width: number;
+        height: number;
+      };
+      fileSize?: number;
+      mimeType?: string;
+      lastModified?: number;
+    };
+  };
 }
 
 interface CustomNodeProps extends NodeProps {
   data: CustomNodeData;
   onLabelUpdate?: (id: string, newLabel: string) => void; // Simple callback
+  onNodeUpdate?: (id: string, newData: CustomNodeData) => void; // Full node data update
 }
 
-const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, xPos, yPos, ...props }: CustomNodeProps) => {
+const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, ...props }: CustomNodeProps) => {
   const [label, setLabel] = useState(data.label || '');
   const [color] = useState(data.color || COLORS[0]);
   const [editing, setEditing] = useState(false);
+  const [showUrlModal, setShowUrlModal] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [showImageViewer, setShowImageViewer] = useState(false);
   const nodeRef = React.useRef<HTMLDivElement>(null);
 
   // Sync label with external data changes
@@ -127,6 +214,75 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, xP
     setEditing(true);
   };
 
+  // Handle URL configuration
+  const handleUrlSave = (urlData: { url: string; urlPreview?: UrlPreviewData }) => {
+    if (props.onNodeUpdate) {
+      props.onNodeUpdate(id, {
+        ...data,
+        properties: {
+          ...data.properties,
+          url: urlData.url,
+          urlPreview: urlData.urlPreview,
+        },
+      });
+    }
+  };
+
+  // Handle Image configuration
+  const handleImageSave = (imageData: { image: CustomImageData }) => {
+    console.log('🖼️ handleImageSave called with:', imageData);
+    if (props.onNodeUpdate) {
+      // Clean up null values for TypeScript compatibility
+      const cleanImageData = {
+        ...imageData.image,
+        uploadedFile: imageData.image.uploadedFile || undefined,
+        thumbnail: imageData.image.thumbnail || undefined,
+      };
+      
+      const newNodeData = {
+        ...data,
+        properties: {
+          ...data.properties,
+          image: cleanImageData,
+        },
+      };
+      console.log('🖼️ Updating node with data:', newNodeData);
+      props.onNodeUpdate(id, newNodeData);
+    } else {
+      console.warn('❌ onNodeUpdate not available in props');
+    }
+  };
+
+  // Handle single click for URL nodes (open configured URL)
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (editing) return;
+
+    // Only URL nodes open URLs directly on click when configured
+    if (data.type === 'url' && data.properties?.url) {
+      window.open(data.properties.url, '_blank', 'noopener,noreferrer');
+    }
+    
+    // For image nodes, open viewer if configured
+    if (data.type === 'image' && (data.properties?.image?.url || data.properties?.image?.uploadedFile)) {
+      setShowImageViewer(true);
+    }
+  };
+
+  // Handle gear icon click to open modals
+  const handleGearClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (data.type === 'url') {
+      setShowUrlModal(true);
+    } else if (data.type === 'image') {
+      setShowImageModal(true);
+    }
+  };
+
   // Focus when selected
   React.useEffect(() => {
     if (selected && nodeRef.current) {
@@ -150,6 +306,7 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, xP
           style={{ marginTop: '8px' }}
           tabIndex={0}
           ref={nodeRef}
+          onClick={handleClick}
           onDoubleClick={handleDoubleClick}
           onKeyDown={handleKeyDown}
         >
@@ -165,15 +322,66 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, xP
               }} 
             />
             
-            {/* Overlay icon - positioned within the screen content area */}
+            {/* Overlay content - positioned within the screen content area */}
             {overlayIcon && (
               <div className="absolute inset-0 flex items-center justify-center" style={{ top: '25px', bottom: '35px' }}>
-                <div className="w-20 h-20 flex items-center justify-center">
-                  {React.createElement(overlayIcon, { className: "w-full h-full" })}
-                </div>
+                {/* URL Preview */}
+                {data.type === 'url' && data.properties?.urlPreview?.thumbnail ? (
+                  <div className="w-20 h-20 rounded overflow-hidden border border-gray-300">
+                    <img
+                      src={data.properties.urlPreview.thumbnail}
+                      alt="URL Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : data.type === 'image' && (data.properties?.image?.thumbnail || data.properties?.image?.url || data.properties?.image?.uploadedFile) ? (
+                  /* Image Preview */
+                  <div className="w-20 h-20 rounded overflow-hidden border border-gray-300">
+                    <img
+                      src={data.properties.image.thumbnail || data.properties.image.url || data.properties.image.uploadedFile}
+                      alt={data.properties.image.alt || "Image Preview"}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  /* Default Icon */
+                  <div className="w-20 h-20 flex items-center justify-center">
+                    {overlayIcon && React.createElement(overlayIcon)}
+                  </div>
+                )}
               </div>
             )}
           </div>
+
+          {/* Gear Icon - Only visible when selected and node type supports configuration */}
+          {selected && (data.type === 'url' || data.type === 'image') && (
+            <button
+              onClick={handleGearClick}
+              className="absolute top-2 right-2 w-6 h-6 bg-white rounded-full shadow-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors z-[9999]"
+              title={`Configure ${data.type}`}
+            >
+              <svg 
+                className="w-4 h-4 text-gray-600" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            </button>
+          )}
+
           {/* Connection handles - ALWAYS visible with high z-index */}
           <Handle
             id="target-left"
@@ -231,6 +439,40 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, xP
             )}
           </div>
         </div>
+
+        {/* Modals */}
+        <UrlConfigModal
+          isOpen={showUrlModal}
+          onClose={() => setShowUrlModal(false)}
+          onSave={handleUrlSave}
+          initialData={{
+            url: data.properties?.url,
+            urlPreview: data.properties?.urlPreview,
+          }}
+        />
+        
+        <ImageConfigModal
+          isOpen={showImageModal}
+          onClose={() => setShowImageModal(false)}
+          onSave={handleImageSave}
+          initialData={{
+            image: data.properties?.image,
+          }}
+        />
+        
+        <ImageViewerModal
+          isOpen={showImageViewer}
+          onClose={() => setShowImageViewer(false)}
+          imageData={{
+            src: data.properties?.image?.thumbnail || data.properties?.image?.url || data.properties?.image?.uploadedFile || '',
+            alt: data.properties?.image?.alt,
+            caption: data.properties?.image?.caption,
+            title: data.label,
+            dimensions: data.properties?.image?.dimensions,
+            fileSize: data.properties?.image?.fileSize,
+            mimeType: data.properties?.image?.mimeType,
+          }}
+        />
       </div>
     );
   }
