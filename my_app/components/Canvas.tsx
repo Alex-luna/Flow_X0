@@ -94,6 +94,9 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [currentViewport, setCurrentViewport] = useState<ViewportInfo>({ x: 0, y: 0, zoom: 1 });
   
+  // States for keyboard shortcuts functionality
+  const [copiedNodes, setCopiedNodes] = useState<Node[]>([]);
+  
   // Create ReactFlow-compatible change handlers using applyNodeChanges and applyEdgeChanges
   const onNodesChange: OnNodesChange = useCallback((changes) => {
     setNodes((nds: Node[]) => applyNodeChanges(changes, nds));
@@ -126,6 +129,68 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     hoveredNode: null,
     mousePosition: null,
   });
+
+  // Helper function to generate unique node ID
+  const generateNodeId = useCallback(() => {
+    return `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }, []);
+
+
+
+  // Keyboard shortcuts functions
+  const copySelectedNodes = useCallback(() => {
+    const selectedNodes = nodes.filter(node => node.selected);
+    if (selectedNodes.length > 0) {
+      setCopiedNodes(selectedNodes);
+      console.log(`📋 Copied ${selectedNodes.length} node(s)`);
+    }
+  }, [nodes]);
+
+  const pasteNodes = useCallback(() => {
+    if (copiedNodes.length === 0) return;
+
+    // Get viewport center as base position for pasting
+    const viewportCenter = getViewportCenter(currentViewport);
+    const baseOffset = 30; // Base offset for pasting
+
+    const newNodes = copiedNodes.map((node, index) => ({
+      ...node,
+      id: generateNodeId(),
+      position: {
+        x: viewportCenter.x + (index * baseOffset),
+        y: viewportCenter.y + (index * baseOffset),
+      },
+      selected: true, // Select the newly pasted nodes
+    }));
+
+    setNodes(currentNodes => [...currentNodes.map(n => ({ ...n, selected: false })), ...newNodes]);
+    console.log(`📋 Pasted ${newNodes.length} node(s)`);
+  }, [copiedNodes, generateNodeId, setNodes, currentViewport]);
+
+  const duplicateSelectedNodes = useCallback(() => {
+    const selectedNodes = nodes.filter(node => node.selected);
+    if (selectedNodes.length === 0) return;
+
+    const baseOffset = 30; // Offset for duplicated nodes
+
+    const duplicatedNodes = selectedNodes.map((node, index) => ({
+      ...node,
+      id: generateNodeId(),
+      position: {
+        x: node.position.x + baseOffset,
+        y: node.position.y + baseOffset,
+      },
+      selected: true, // Select the duplicated nodes
+    }));
+
+    setNodes(currentNodes => [...currentNodes.map(n => ({ ...n, selected: false })), ...duplicatedNodes]);
+    console.log(`🔄 Duplicated ${duplicatedNodes.length} node(s)`);
+  }, [nodes, generateNodeId, setNodes]);
+
+  const selectAllNodes = useCallback(() => {
+    setNodes(currentNodes => currentNodes.map(node => ({ ...node, selected: true })));
+    console.log(`✅ Selected all ${nodes.length} node(s)`);
+  }, [nodes.length, setNodes]);
 
   // Dynamic edge styles based on theme
   const animatedEdgeStyle = React.useMemo(() => ({
@@ -431,15 +496,42 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     [setSelectedEdges]
   );
 
-  // Handle keyboard deletion for selected edges
+  // Handle keyboard shortcuts and deletion for selected edges
   const onKeyDown = useCallback(
     (event: KeyboardEvent) => {
+      // Prevent default behavior for our custom shortcuts
+      const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+      
+      // Handle keyboard shortcuts
+      if (isCtrlOrCmd) {
+        switch (event.key.toLowerCase()) {
+          case 'c':
+            event.preventDefault();
+            copySelectedNodes();
+            break;
+          case 'v':
+            event.preventDefault();
+            pasteNodes();
+            break;
+          case 'd':
+            event.preventDefault();
+            duplicateSelectedNodes();
+            break;
+          case 'a':
+            event.preventDefault();
+            selectAllNodes();
+            break;
+        }
+        return;
+      }
+
+      // Handle deletion for selected edges (existing functionality)
       if ((event.key === 'Delete' || event.key === 'Backspace') && selectedEdges.length > 0) {
         setEdges((eds: Edge[]) => eds.filter(e => !selectedEdges.includes(e.id)));
         setSelectedEdges([]);
       }
     },
-    [selectedEdges, setEdges, setSelectedEdges]
+    [selectedEdges, setEdges, setSelectedEdges, copySelectedNodes, pasteNodes, duplicateSelectedNodes, selectAllNodes]
   );
 
   const onDrop = useCallback(
@@ -825,7 +917,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
             className="text-sm"
             style={{ color: theme.colors.text.secondary }}
           >
-            🎯 Drag from sidebar | Space+Drag to pan | Right-click drag to pan | Scroll to zoom
+            🎯 Drag from sidebar | Space+Drag to pan | Ctrl+C/V/D/A for copy/paste/duplicate/select all
           </div>
           
           {/* Save Status Indicator */}
