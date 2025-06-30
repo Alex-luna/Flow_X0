@@ -854,3 +854,131 @@ console.log('💾 Saving:', { flowId, nodes: nodes.length, edges: edges.length }
      timestamp: Date.now()
    });
    ```
+
+## Nova Funcionalidade: Edição de Títulos de Nodes ✅
+
+### Data: [Atual]
+**Problema Resolvido:** Usuários não conseguiam editar títulos de nodes após criá-los no canvas.
+
+### Implementação Completa
+
+#### 1. **Funcionalidades Implementadas:**
+- ✅ **Edição Inline**: Duplo clique no node para editar o título
+- ✅ **Controles de Teclado**: 
+  - `Enter` para salvar
+  - `Escape` para cancelar
+  - Setas para mover node (quando não editando)
+- ✅ **Salvamento Automático**: Mudanças são salvas automaticamente no servidor (Convex)
+- ✅ **Feedback Visual**: 
+  - Indicador de salvamento (💾)
+  - Animações de carregamento
+  - Estados visuais claros
+- ✅ **Tratamento de Erro**: Reversão automática em caso de falha
+- ✅ **Sincronização**: Estado local sincroniza com dados do servidor
+
+#### 2. **Arquivos Modificados:**
+
+**`my_app/components/Canvas.tsx`:**
+```typescript
+// Adicionado handler para atualização individual de nodes
+const handleNodeDataUpdate = useCallback(async (nodeId: string, newData: any) => {
+  // Atualiza estado local imediatamente (UX responsiva)
+  setNodes(prevNodes => /* ... */);
+  
+  // Salva no servidor usando mutation específica
+  if (activeFlowId) {
+    await saveNodeMutation(updateData);
+  }
+}, [nodes, setNodes, activeFlowId, saveNodeMutation]);
+
+// Node types agora recebem o dataUpdater
+const nodeTypesWithUpdater = useMemo(() => ({
+  custom: (props: any) => <CustomNode {...props} dataUpdater={handleNodeDataUpdate} />,
+}), [handleNodeDataUpdate]);
+```
+
+**`my_app/components/Node.tsx`:**
+```typescript
+// Estados para controle de edição
+const [editing, setEditing] = useState(false);
+const [label, setLabel] = useState(data.label || '');
+const [isSaving, setIsSaving] = useState(false);
+
+// Sincronização com dados externos
+React.useEffect(() => {
+  if (!editing) {
+    setLabel(data.label || '');
+  }
+}, [data.label, editing]);
+
+// Salvamento com tratamento de erro
+const handleBlur = async () => {
+  if (props.dataUpdater && label.trim() !== data.label) {
+    setIsSaving(true);
+    try {
+      await props.dataUpdater(id, { ...data, label: label.trim() });
+    } catch (error) {
+      setLabel(data.label || ''); // Reverte em caso de erro
+    } finally {
+      setIsSaving(false);
+    }
+  }
+};
+```
+
+#### 3. **Como Usar:**
+
+1. **Criar um Node**: Arraste qualquer elemento da sidebar para o canvas
+2. **Editar Título**: 
+   - Duplo clique no node
+   - Digite o novo título
+   - Pressione `Enter` para salvar ou `Escape` para cancelar
+3. **Feedback Visual**: 
+   - Ícone de salvamento (💾) aparece durante o save
+   - Animações indicam estado de carregamento
+4. **Tratamento de Erro**: Se o save falhar, o título reverte automaticamente
+
+#### 4. **Benefícios Técnicos:**
+
+- **Performance**: Updates são feitos individualmente (não salva todo o canvas)
+- **UX Responsiva**: Estado local atualiza imediatamente, salvamento acontece em background  
+- **Robustez**: Tratamento de erros com reversão automática
+- **Consistência**: Funciona tanto para funnel steps quanto para nodes tradicionais
+- **Acessibilidade**: Suporte completo a teclado e feedback visual
+
+#### 5. **Padrões Arquiteturais Utilizados:**
+
+- **Optimistic Updates**: UI atualiza imediatamente, servidor sincroniza depois
+- **Error Boundary Pattern**: Falhas não quebram a experiência do usuário  
+- **Single Responsibility**: Função específica para cada tipo de update
+- **State Synchronization**: Estado local e servidor mantém consistência
+
+### Próximos Passos Sugeridos:
+- [ ] Implementar edição de cores via UI
+- [ ] Adicionar validação de títulos (ex: máximo de caracteres)
+- [ ] Implementar undo/redo para mudanças
+- [ ] Adicionar shortcuts de teclado para edição rápida
+
+---
+
+## Lições Aprendidas
+
+### 1. **Convex Integration**
+- Usar mutations específicas para updates individuais é mais eficiente
+- `useCanvasSync` hook funciona bem para operações batch
+- Individual node updates precisam de abordagem diferente
+
+### 2. **React Flow + Estado Local**
+- Sincronização entre estado local e externo requer cuidado especial
+- Optimistic updates melhoram significativamente a UX
+- `useCallback` e `useMemo` são essenciais para performance
+
+### 3. **UX Patterns**
+- Feedback visual imediato é crucial para edição inline
+- Tratamento de erro deve ser transparente para o usuário
+- Controles de teclado aumentam produtividade
+
+### 4. **TypeScript Benefits**
+- Tipagem forte ajudou a evitar bugs durante desenvolvimento
+- Interface clara entre componentes facilita manutenção
+- Props opcionais (`dataUpdater?`) mantém backward compatibility

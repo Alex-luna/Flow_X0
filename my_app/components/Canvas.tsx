@@ -26,7 +26,10 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useCanvasSync } from '../hooks/useCanvasSync';
 import { SaveStatusIndicator } from './SaveStatusIndicator';
 import { getSmartNodePosition, getViewportCenter, ViewportInfo } from '../lib/utils/canvasHelpers';
+import { useMutation } from 'convex/react';
+import { api } from '../convex/_generated/api';
 
+// Define nodeTypes outside component to prevent re-creation
 const nodeTypes = {
   custom: CustomNode,
 };
@@ -82,7 +85,11 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     lastSaveTime,
     manualSave,
     saveStatus,
+    activeFlowId,
   } = useCanvasSync();
+  
+  // Add mutation hook for individual node updates
+  const saveNodeMutation = useMutation(api.flows.saveNode);
   
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [currentViewport, setCurrentViewport] = useState<ViewportInfo>({ x: 0, y: 0, zoom: 1 });
@@ -158,8 +165,6 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
   // Handler para quando inicia uma conexão
   const onConnectStart: OnConnectStart = useCallback(
     (event, { nodeId, handleId, handleType }) => {
-      console.log('🔌 Connection started:', { nodeId, handleId, handleType });
-      
       setConnectionInProgress({
         isConnecting: true,
         sourceNode: nodeId,
@@ -200,7 +205,6 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
   // Handler para quando termina uma conexão
   const onConnectEnd: OnConnectEnd = useCallback(
     (event) => {
-      console.log('🔌 Connection ended');
       const { isConnecting, sourceNode, sourceHandle, hoveredNode } = connectionInProgress;
       
       if (isConnecting && sourceNode && hoveredNode && sourceNode !== hoveredNode) {
@@ -210,12 +214,8 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           (edge.source === hoveredNode && edge.target === sourceNode)
         );
         
-        if (existingConnection) {
-          console.log('⚠️ Connection already exists between nodes');
-        } else {
+        if (!existingConnection) {
           // Auto-conectar ao node que está sendo hovered
-          console.log('🎯 Auto-connecting:', { sourceNode, sourceHandle, hoveredNode });
-          
           // Calcular o melhor handle de destino baseado na posição relativa
           const targetHandle = calculateBestTargetHandle(sourceNode, hoveredNode, sourceHandle || 'source-right');
           
@@ -225,8 +225,6 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
             target: hoveredNode, 
             targetHandle: targetHandle,
           };
-          
-          console.log('🔗 Creating connection:', connection);
           
           // Usar o onConnect existente para criar a conexão
           onConnect(connection);
@@ -397,19 +395,9 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
   React.useEffect(() => {
     if (!connectionInProgress.isConnecting || !debouncedMousePosition) return;
     
-    // Performance timing para debug
-    const startTime = performance.now();
     const hoveredNodeId = getNodeAtPosition(debouncedMousePosition.x, debouncedMousePosition.y);
-    const endTime = performance.now();
-    
-    // Log performance apenas se demorar mais que 1ms
-    if (endTime - startTime > 1) {
-      console.log(`🐌 Collision detection took ${(endTime - startTime).toFixed(2)}ms for ${nodes.length} nodes`);
-    }
     
     if (hoveredNodeId !== connectionInProgress.hoveredNode) {
-      console.log('🎯 Hovering node changed (debounced):', hoveredNodeId, 
-                  `(${spatialGrid ? 'spatial grid' : 'linear search'})`);
       setConnectionInProgress(prev => ({
         ...prev,
         hoveredNode: hoveredNodeId,
@@ -447,7 +435,6 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
   const onKeyDown = useCallback(
     (event: KeyboardEvent) => {
       if ((event.key === 'Delete' || event.key === 'Backspace') && selectedEdges.length > 0) {
-        console.log('🗑️ Deleting selected edges:', selectedEdges);
         setEdges((eds: Edge[]) => eds.filter(e => !selectedEdges.includes(e.id)));
         setSelectedEdges([]);
       }
@@ -455,24 +442,17 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     [selectedEdges, setEdges, setSelectedEdges]
   );
 
-
-
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
-      console.log('🎯 Drop event fired!');
 
       if (!reactFlowWrapper.current || !reactFlowInstance) {
-        console.error('❌ ReactFlow wrapper or instance not available:', {
-          wrapper: !!reactFlowWrapper.current,
-          instance: !!reactFlowInstance
-        });
+        console.error('❌ ReactFlow wrapper or instance not available');
         return;
       }
 
       try {
         const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-        console.log('📏 ReactFlow bounds:', reactFlowBounds);
         
         // Try both data formats for compatibility
         let dragDataString = event.dataTransfer.getData('application/json');
@@ -480,23 +460,17 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           dragDataString = event.dataTransfer.getData('text/plain');
         }
         
-        console.log('📦 Raw drag data:', dragDataString);
-        
         if (!dragDataString) {
-          console.error('❌ No drag data found in any format');
-          console.log('📋 Available data types:', Array.from(event.dataTransfer.types));
+          console.error('❌ No drag data found');
           return;
         }
 
         const dragData = JSON.parse(dragDataString);
-        console.log('🎯 Parsed drag data:', dragData);
 
         const dropPosition = reactFlowInstance.project({
           x: event.clientX - reactFlowBounds.left,
           y: event.clientY - reactFlowBounds.top,
         });
-
-        console.log('📍 Drop position:', dropPosition, 'from client:', { x: event.clientX, y: event.clientY });
 
         // Use smart positioning to avoid overlaps
         const smartPosition = getSmartNodePosition(
@@ -506,8 +480,6 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           dropPosition,
           snapToGrid
         );
-
-        console.log('🧠 Smart position calculated:', smartPosition);
 
         // Create new node with proper data structure
         const newNode: Node = {
@@ -521,11 +493,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           },
         };
 
-        console.log('✅ Creating new node:', newNode);
-        setNodes((nds: Node[]) => {
-          console.log('📊 Current nodes:', nds.length, 'Adding node...');
-          return nds.concat(newNode);
-        });
+        setNodes((nds: Node[]) => nds.concat(newNode));
       } catch (error) {
         console.error('❌ Error handling drop:', error);
       }
@@ -533,15 +501,13 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     [reactFlowInstance, setNodes]
   );
 
-  // Wrapper-specific handlers with different logs
+  // Wrapper-specific handlers
   const onWrapperDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
-    console.log('📦 WRAPPER DragOver event fired');
   }, []);
 
   const onWrapperDrop = useCallback((event: React.DragEvent) => {
-    console.log('📦 WRAPPER Drop event fired!');
     onDrop(event);
   }, [onDrop]);
 
@@ -571,7 +537,6 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
         },
       };
 
-      console.log('✅ Adding node programmatically:', newNode, 'at smart position:', smartPosition);
       return currentNodes.concat(newNode);
     });
   }, [setNodes, currentViewport, snapToGrid]);
@@ -585,7 +550,6 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
         // Also pass ReactFlow instance and wrapper for manual drop calculation
         onAddNodeRef.getDropPosition = (clientX: number, clientY: number) => {
         if (!reactFlowWrapper.current || !reactFlowInstance) {
-          console.warn('⚠️ ReactFlow not ready for position calculation');
           return { x: clientX - 220, y: clientY - 100 };
         }
         
@@ -595,7 +559,6 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           y: clientY - reactFlowBounds.top,
         });
         
-        console.log('🎯 Calculated precise position:', position);
         return position;
       };
     }
@@ -605,7 +568,6 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
   React.useEffect(() => {
     if (connectionInProgress.isConnecting) {
       document.addEventListener('mousemove', handleMouseMove);
-      console.log('👂 Mouse move listener added for connection tracking');
     } else {
       document.removeEventListener('mousemove', handleMouseMove);
     }
@@ -615,21 +577,15 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     };
   }, [connectionInProgress.isConnecting, handleMouseMove]);
 
-  // Debug: Global drop listener
+  // Global drop listener
   React.useEffect(() => {
-    const handleGlobalDrop = (e: DragEvent) => {
-      console.log('🌍 GLOBAL Drop detected at:', { x: e.clientX, y: e.clientY });
-    };
-    
     const handleGlobalDragOver = (e: DragEvent) => {
       e.preventDefault(); // Allow drop
     };
     
-    document.addEventListener('drop', handleGlobalDrop);
     document.addEventListener('dragover', handleGlobalDragOver);
     
     return () => {
-      document.removeEventListener('drop', handleGlobalDrop);
       document.removeEventListener('dragover', handleGlobalDragOver);
     };
   }, []);
@@ -670,7 +626,6 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
   // Handle context menu delete action
   const handleContextMenuDelete = useCallback(() => {
     if (contextMenu.edgeId) {
-      console.log('🗑️ Deleting edge from context menu:', contextMenu.edgeId);
       setEdges((eds: Edge[]) => eds.filter(e => e.id !== contextMenu.edgeId));
       setContextMenu({ show: false, x: 0, y: 0, edgeId: null });
     }
@@ -700,6 +655,59 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Stable function to handle node data updates (only labels)
+  const handleNodeLabelUpdate = useCallback(async (nodeId: string, newLabel: string) => {
+    if (!activeFlowId) return;
+    
+    try {
+      // Find the node to update in current nodes
+      const nodeToUpdate = nodes.find(n => n.id === nodeId);
+      if (!nodeToUpdate) return;
+
+      // Update local state immediately for responsive UI
+      setNodes((prevNodes: Node[]) => 
+        prevNodes.map(node => 
+          node.id === nodeId 
+            ? { ...node, data: { ...node.data, label: newLabel } }
+            : node
+        )
+      );
+
+      // Save to server
+      const updateData = {
+        flowId: activeFlowId,
+        nodeId: nodeId,
+        type: nodeToUpdate.type || 'custom',
+        position: nodeToUpdate.position,
+        data: { ...nodeToUpdate.data, label: newLabel }
+      };
+      
+      await saveNodeMutation(updateData);
+    } catch (error) {
+      console.error('Failed to save node label:', error);
+      
+      // Revert local state on error
+      setNodes((prevNodes: Node[]) => 
+        prevNodes.map(node => 
+          node.id === nodeId 
+            ? { ...node, data: { ...node.data, label: node.data.label } } // Keep original
+            : node
+        )
+      );
+    }
+  }, [activeFlowId, saveNodeMutation, setNodes]); // Simplified dependencies
+
+  // Use a ref to store the handler without causing re-renders
+  const handlerRef = useRef(handleNodeLabelUpdate);
+  handlerRef.current = handleNodeLabelUpdate;
+
+  // Create stable nodeTypes that never change
+  const stableNodeTypes = useMemo(() => ({
+    custom: (props: any) => (
+      <CustomNode {...props} onLabelUpdate={(id: string, label: string) => handlerRef.current(id, label)} />
+    )
+  }), []); // Empty dependencies - never recreated
+
   return (
     <div className="w-full h-full flex flex-col">
       {/* Controls Bar */}
@@ -723,12 +731,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           </button>
           
           <button
-            onClick={() => {
-              console.log('🧪 Test Button: ReactFlow Instance:', !!reactFlowInstance);
-              console.log('🧪 Test Button: Wrapper:', !!reactFlowWrapper.current);
-              console.log('🧪 Test Button: Current nodes:', nodes.length);
-              handleAddNode('test');
-            }}
+            onClick={() => handleAddNode('test')}
             className="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:brightness-110"
             style={{
               backgroundColor: theme.colors.accent.success,
@@ -803,14 +806,6 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
         onDrop={onWrapperDrop}
         onDragOver={onWrapperDragOver}
       >
-        {/* DEBUG INFO */}
-        {(() => {
-          console.log('🔍 Canvas Render - nodes:', nodes.length, 'data:', nodes);
-          console.log('🔍 Canvas Render - edges:', edges.length);
-          console.log('🔍 Canvas Render - isLoaded:', isLoaded, 'isLoading:', isLoading);
-          return null;
-        })()}
-        
         <ReactFlow
           key="horizontal-handles-fix-v3"
           nodes={highlightedNodes}
@@ -826,7 +821,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
           onInit={setReactFlowInstance}
           onMove={(event, viewport) => setCurrentViewport(viewport)}
 
-          nodeTypes={nodeTypes}
+          nodeTypes={stableNodeTypes}
           fitView
           snapToGrid={snapToGrid}
           snapGrid={[16, 16]}

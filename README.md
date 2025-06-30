@@ -64,6 +64,12 @@ Facilitar a criação, visualização e simulação de funis e fluxogramas de ma
 - Carregamento do último projeto
 - Gerenciamento de projetos/pastas (mock)
 
+### 🎯 Edição Inline
+- Duplo clique para editar títulos de qualquer node
+
+### ⚡ Performance
+- Updates otimizados com sincronização em tempo real
+
 ## 🛠️ Stack Técnica
 
 ### Frontend
@@ -215,6 +221,8 @@ npm test --watch
 - [x] Conectores animados
 - [x] Snap to grid
 - [x] Controles de navegação
+- [x] Edição de títulos inline
+- [x] Performance otimizada
 
 ### 🚧 Em Desenvolvimento
 - [ ] Mini mapa

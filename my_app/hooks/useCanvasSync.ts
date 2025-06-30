@@ -70,20 +70,16 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
 
     // Skip loading if we're in SAVING_BLOCK mode (prevents overwriting during save)
     if (lastLoadedProject === 'SAVING_BLOCK') {
-      console.log('🛑 Skipping data load - save in progress');
       return;
     }
 
     if (completeFlowData === null) {
       // No flow exists for this project, create one
-      console.log('🆕 Creating new flow for project:', currentProject.name);
-      
       createFlowMutation({
         projectId: currentProject.id as Id<"projects">,
         name: `${currentProject.name} Flow`,
         description: `Main flow for ${currentProject.name}`,
       }).then((flowId) => {
-        console.log('✅ Created new flow:', flowId);
         setActiveFlowId(flowId);
         setNodes([]);
         setEdges([]);
@@ -98,8 +94,6 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
     } else {
       // Only load if we're actually switching projects or initial load
       if (lastLoadedProject !== currentProject.id) {
-        console.log('📂 Loading flow data for project:', currentProject.name);
-        
         setActiveFlowId(completeFlowData.flowId);
         
         // Convert Convex data to ReactFlow format
@@ -109,10 +103,6 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
           position: node.position,
           data: node.data,
         }));
-        
-        console.log('🔍 Converting Convex to ReactFlow:');
-        console.log('  - Raw Convex nodes:', completeFlowData.nodes);
-        console.log('  - Converted ReactFlow nodes:', reactFlowNodes);
 
         const reactFlowEdges: Edge[] = completeFlowData.edges.map(edge => ({
           id: edge.id,
@@ -131,12 +121,6 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
         setHasUnsavedChanges(false);
         setSaveStatus('saved');
         setLastLoadedProject(currentProject.id);
-        
-        console.log('✅ Loaded flow data:', {
-          nodes: reactFlowNodes.length,
-          edges: reactFlowEdges.length,
-          viewport: completeFlowData.viewport
-        });
       }
     }
   }, [currentProject, completeFlowData, createFlowMutation, lastLoadedProject]);
@@ -144,18 +128,10 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
   // Save to Convex
   const saveToConvex = useCallback(async () => {
     if (!activeFlowId || !currentProject) {
-      console.log('⚠️ Skipping save: no flow or project');
       return;
     }
 
     try {
-      console.log('💾 Saving to Convex...', { 
-        flowId: activeFlowId,
-        projectId: currentProject.id,
-        nodes: nodes.length, 
-        edges: edges.length 
-      });
-
       setSaveStatus('saving');
       setIsLoading(true);
 
@@ -201,8 +177,6 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
       setLastSaveTime(new Date());
       setHasUnsavedChanges(false);
       setSaveStatus('saved');
-      
-      console.log('✅ Saved to Convex successfully');
     } catch (error) {
       console.error('❌ Save to Convex failed:', error);
       setSaveStatus('error');
@@ -268,8 +242,6 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
         
         // Check if new nodes were added (different length)
         if (newNodes.length > prevNodes.length) {
-          console.log('🚀 New node detected, preventing data reload and saving immediately');
-          
           // BLOCK reactive reloads for 5 seconds to allow save to complete
           setLastLoadedProject('SAVING_BLOCK');
           
@@ -277,7 +249,6 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
           setTimeout(async () => {
             try {
               await saveToConvex();
-              console.log('✅ Save completed, re-enabling data loading');
               // Re-enable reactive loading after save completes
               if (currentProject) {
                 setLastLoadedProject(currentProject.id);
@@ -299,8 +270,6 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
       
       // Check if this is likely a new node addition
       if (nodes.length < newNodes.length) {
-        console.log('🚀 New node detected, preventing data reload and saving immediately');
-        
         // BLOCK reactive reloads for 5 seconds
         setLastLoadedProject('SAVING_BLOCK');
         

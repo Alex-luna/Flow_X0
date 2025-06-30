@@ -59,59 +59,62 @@ interface CustomNodeData {
 
 interface CustomNodeProps extends NodeProps {
   data: CustomNodeData;
-  dataUpdater?: (id: string, newData: any) => void;
+  onLabelUpdate?: (id: string, newLabel: string) => void; // Simple callback
 }
 
 const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, xPos, yPos, ...props }: CustomNodeProps) => {
-  const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(data.label || '');
-  const [color, setColor] = useState(data.color || COLORS[0]);
-  const [showColorMenu, setShowColorMenu] = useState(false);
+  const [color] = useState(data.color || COLORS[0]);
+  const [editing, setEditing] = useState(false);
   const nodeRef = React.useRef<HTMLDivElement>(null);
 
-  // Verifica se é um funnel step (tem tipo e ícone)
+  // Sync label with external data changes
+  React.useEffect(() => {
+    if (!editing) {
+      setLabel(data.label || '');
+    }
+  }, [data.label, editing]);
+
+  // Verify if it's a funnel step (has type and icon)
   const isFunnelStep = data.type && ICON_MAP[data.type];
   const overlayIcon = isFunnelStep ? ICON_MAP[data.type] : null;
 
-  // Salva edição
-  const handleBlur = () => {
+  // Simple save function
+  const handleSave = () => {
     setEditing(false);
-    if (props.dataUpdater) {
-      props.dataUpdater(id, { ...data, label });
+    const trimmedLabel = label.trim();
+    if (trimmedLabel !== data.label && props.onLabelUpdate) {
+      props.onLabelUpdate(id, trimmedLabel);
     }
   };
 
-  // Atualiza cor
-  const handleColorChange = (c: string) => {
-    setColor(c);
-    setShowColorMenu(false);
-    if (props.dataUpdater) {
-      props.dataUpdater(id, { ...data, color: c });
-    }
-  };
-
-  // Foco visual ao selecionar
-  React.useEffect(() => {
-    if (selected && nodeRef.current && !editing) {
-      nodeRef.current.focus();
-    }
-  }, [selected, editing]);
-
-  // Mover node com setas
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!selected || editing) return;
-    let dx = 0, dy = 0;
-    if (e.key === 'ArrowUp') dy = -16;
-    if (e.key === 'ArrowDown') dy = 16;
-    if (e.key === 'ArrowLeft') dx = -16;
-    if (e.key === 'ArrowRight') dx = 16;
-    if (dx !== 0 || dy !== 0) {
-      e.preventDefault();
-      if (props.dataUpdater) {
-        props.dataUpdater(id, { _move: { x: (xPos ?? 0) + dx, y: (yPos ?? 0) + dy } });
+  // Handle keyboard events
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (editing) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSave();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setEditing(false);
+        setLabel(data.label || ''); // Reset to original
       }
     }
   };
+
+  // Start editing on double click
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditing(true);
+  };
+
+  // Focus when selected
+  React.useEffect(() => {
+    if (selected && nodeRef.current) {
+      nodeRef.current.focus();
+    }
+  }, [selected]);
 
   // Renderização para funnel steps
   if (isFunnelStep) {
@@ -126,11 +129,11 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, xP
                 ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent' 
                 : 'hover:ring-1 hover:ring-gray-300 hover:ring-offset-1 hover:ring-offset-transparent'
           }`}
-          onDoubleClick={() => setEditing(true)}
-          onKeyDown={handleKeyDown}
           style={{ marginTop: '8px' }}
           tabIndex={0}
           ref={nodeRef}
+          onDoubleClick={handleDoubleClick}
+          onKeyDown={handleKeyDown}
         >
           {/* SVG positioned inside the main container */}
           <div className="absolute inset-0 w-[105px] h-[135px] z-0">
@@ -186,21 +189,29 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, xP
 
         {/* Label container - positioned below with proper spacing */}
         <div className="absolute left-0 right-0 z-[10000]" style={{ top: '151px' }}>
-          {editing ? (
-            <input
-              type="text"
-              value={label}
-              onChange={e => setLabel(e.target.value)}
-              onBlur={handleBlur}
-              onKeyDown={e => e.key === 'Enter' && handleBlur()}
-              className="w-full px-1 py-0.5 text-xs font-medium text-center bg-white border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-              autoFocus
-            />
-          ) : (
-            <div className="px-1 py-0.5 text-xs font-medium text-gray-700 text-center bg-white/90 backdrop-blur-sm rounded border border-gray-200 truncate shadow-sm">
-              {label}
-            </div>
-          )}
+          <div className="relative">
+            {editing ? (
+              <input
+                type="text"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                onBlur={handleSave}
+                onKeyDown={handleKeyDown}
+                className="w-full px-2 py-1 text-xs font-medium text-center bg-white border-2 border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg text-gray-900 z-[20000]"
+                autoFocus
+                placeholder="Digite o título..."
+                style={{ minHeight: '20px', backgroundColor: 'white' }}
+              />
+            ) : (
+              <div 
+                className={`px-1 py-0.5 text-xs font-medium text-gray-700 text-center bg-white/90 backdrop-blur-sm rounded border border-gray-200 truncate shadow-sm transition-all duration-200 hover:bg-white/95 hover:shadow-md cursor-pointer`}
+                title={`${label || 'Sem título'} - Duplo clique para editar`}
+                onDoubleClick={handleDoubleClick}
+              >
+                {label || 'Sem título'}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -219,26 +230,33 @@ const Node: React.FC<CustomNodeProps> = ({ id, data, selected, isConnectable, xP
               : 'border-gray-200 hover:border-gray-300 hover:shadow-md hover:ring-1 hover:ring-gray-300 hover:ring-offset-1'
         }`}
         style={{ backgroundColor: color }}
-        onDoubleClick={() => setEditing(true)}
-        onKeyDown={handleKeyDown}
         tabIndex={0}
         ref={nodeRef}
+        onDoubleClick={handleDoubleClick}
+        onKeyDown={handleKeyDown}
       >
-        {editing ? (
-          <input
-            type="text"
-            value={label}
-            onChange={e => setLabel(e.target.value)}
-            onBlur={handleBlur}
-            onKeyDown={e => e.key === 'Enter' && handleBlur()}
-            className="w-full text-xs font-medium text-center bg-transparent border-none focus:outline-none"
-            autoFocus
-          />
-        ) : (
-          <span className="text-xs font-medium text-gray-700 truncate">
-            {label}
-          </span>
-        )}
+        <div className="relative w-full h-full flex items-center justify-center">
+          {editing ? (
+            <input
+              type="text"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              onBlur={handleSave}
+              onKeyDown={handleKeyDown}
+              className="w-full text-xs font-medium text-center bg-white border border-blue-500 focus:outline-none text-gray-900 rounded px-1"
+              autoFocus
+              placeholder="Digite o título..."
+              style={{ minHeight: '16px', backgroundColor: 'white' }}
+            />
+          ) : (
+            <span 
+              className={`text-xs font-medium text-gray-700 truncate cursor-pointer`}
+              title={`${label || 'Sem título'} - Duplo clique para editar`}
+            >
+              {label || 'Sem título'}
+            </span>
+          )}
+        </div>
 
         {/* Connection handles */}
         <Handle

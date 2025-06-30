@@ -65,7 +65,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onAddNode }) => {
 
   const handleDragStart = (event: React.DragEvent, item: BlockItem) => {
     try {
-      console.log('🚀 Drag started for item:', item);
+  
       setIsDragging(true);
       setDraggedItem(item);
       
@@ -76,22 +76,21 @@ const Sidebar: React.FC<SidebarProps> = ({ onAddNode }) => {
         id: item.id
       };
       
-      console.log('📦 Setting drag data:', dragData);
+  
       
       // Set both data formats for compatibility
       event.dataTransfer.setData('application/json', JSON.stringify(dragData));
       event.dataTransfer.setData('text/plain', JSON.stringify(dragData));
       event.dataTransfer.effectAllowed = 'copy';
       
-      console.log('✅ Drag data set successfully');
-      console.log('📋 DataTransfer types set:', Array.from(event.dataTransfer.types));
+      
     } catch (error) {
       console.error('❌ Error in handleDragStart:', error);
     }
   };
 
   const handleDragEnd = (event: React.DragEvent) => {
-    console.log('🏁 Drag ended at position:', { x: event.clientX, y: event.clientY });
+
     
     if (isDragging && draggedItem) {
       // Check if mouse is over canvas area (approximate)
