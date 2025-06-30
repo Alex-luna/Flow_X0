@@ -20,6 +20,15 @@ import CTA1Icon from './icons/CTA1Icon';
 import CTA2Icon from './icons/CTA2Icon';
 import CTA3Icon from './icons/CTA3Icon';
 
+// Import geometric shape icons
+import CircleIcon from './icons/CircleIcon';
+import SquareIcon from './icons/SquareIcon';
+import TriangleIcon from './icons/TriangleIcon';
+import DiamondIcon from './icons/DiamondIcon';
+import PentagonIcon from './icons/PentagonIcon';
+import HexagonIcon from './icons/HexagonIcon';
+import StarIcon from './icons/StarIcon';
+
 const COLORS = [
   '#6366F1', // indigo (padrão)
   '#2563eb', // azul
@@ -32,6 +41,7 @@ const COLORS = [
 
 // Mapeamento de tipos para ícones
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
+  // Funnel steps
   url: UrlIcon,
   generic: GenericIcon,
   download: DownloadIcon,
@@ -47,6 +57,14 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   user: UserIcon,
   thankyou: ThankyouIcon,
   popup: PopupIcon,
+  // Geometric shapes
+  circle: CircleIcon,
+  square: SquareIcon,
+  triangle: TriangleIcon,
+  diamond: DiamondIcon,
+  pentagon: PentagonIcon,
+  hexagon: HexagonIcon,
+  star: StarIcon,
 };
 
 interface CustomNodeData {
