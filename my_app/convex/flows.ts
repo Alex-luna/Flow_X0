@@ -207,6 +207,7 @@ export const getCompleteFlowSimple = query({
           label: node.data.label,
           type: node.data.type,
           color: node.data.color,
+          properties: node.data.properties,
         },
       })),
       edges: edges.map(edge => ({
