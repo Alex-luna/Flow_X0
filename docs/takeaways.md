@@ -1081,3 +1081,359 @@ const handleNodeLabelUpdate = useCallback(async (nodeId: string, newLabel: strin
 - Tipagem forte ajudou a evitar bugs durante desenvolvimento
 - Interface clara entre componentes facilita manutenção
 - Props opcionais (`dataUpdater?`) mantém backward compatibility
+
+---
+
+## ✅ Nova Funcionalidade: URL & Image Nodes - CONCLUÍDA
+
+### **Data**: 2025-01-02
+### **Status**: ✅ **IMPLEMENTADA E FUNCIONANDO**
+
+**Problema Resolvido:** Usuários precisavam de nodes especializados para URLs e imagens no mapeamento de funis.
+
+#### **Funcionalidades Implementadas:**
+
+##### **1. URL Node Enhancement** ✅
+- ✅ **Configuração de URL**: Modal para inserir links com validação
+- ✅ **Preview de Webpage**: Geração automática de thumbnails e metadados
+- ✅ **Click-to-Open**: Clique no node abre URL em nova aba
+- ✅ **Validação de URL**: Verificação automática de URLs válidas
+- ✅ **Feedback Visual**: Preview dentro do node após configuração
+
+##### **2. Image Node Implementation** ✅
+- ✅ **Upload de Arquivos**: Drag & drop + seleção manual
+- ✅ **URL de Imagem**: Suporte para links de imagens externas
+- ✅ **Validação de Arquivo**: Limite de 5MB, tipos MIME válidos
+- ✅ **Metadata Extraction**: Dimensões, tamanho, tipo automático
+- ✅ **Fullscreen Viewer**: Modal com zoom, pan e controles de teclado
+- ✅ **Alt Text & Caption**: Campos de acessibilidade e descrição
+- ✅ **Preview Thumbnails**: Visualização dentro do node
+
+#### **Componentes Criados:**
+
+**Modais de Configuração:**
+- `UrlConfigModal.tsx` - Configuração de URLs com preview
+- `ImageConfigModal.tsx` - Upload/URL de imagens com tabas
+- `ImageViewerModal.tsx` - Visualizador fullscreen com controles
+
+**Ícones Especializados:**
+- `ImageIcon.tsx` - Ícone SVG customizado para nodes de imagem
+
+#### **Problemas Técnicos Resolvidos:**
+
+##### **1. 🚨 CRITICAL: Convex Schema Validation Errors**
+**Erro:** `ArgumentValidationError: Object contains extra field 'properties' that is not in the validator`
+
+**Root Cause:** Múltiplas mutations do Convex usando validators diferentes, causando inconsistência.
+
+**Problemas Identificados:**
+- `saveNode` mutation ✅ atualizada
+- `saveBatchFlowData` mutation ❌ desatualizada  
+- `getCompleteFlowSimple` query ❌ não incluía properties no retorno
+
+**Sintomas:**
+- Dados salvos localmente mas perdidos ao recarregar página
+- Image previews apareciam por 1 segundo e desapareciam
+- Console errors durante operações batch
+
+**Solução Completa Implementada:**
+
+```typescript
+// 1. Atualizou saveBatchFlowData mutation
+data: v.object({
+  label: v.string(),
+  type: v.string(),
+  color: v.optional(v.string()),
+  description: v.optional(v.string()),
+  properties: v.optional(v.object({
+    url: v.optional(v.string()),
+    redirectUrl: v.optional(v.string()),
+    conversionGoal: v.optional(v.string()),
+    // URL Preview properties
+    urlPreview: v.optional(v.object({
+      title: v.optional(v.string()),
+      description: v.optional(v.string()),
+      thumbnail: v.optional(v.string()),
+      favicon: v.optional(v.string()),
+      lastFetched: v.optional(v.number()),
+      fetchError: v.optional(v.string()),
+    })),
+    // Image properties
+    image: v.optional(v.object({
+      url: v.optional(v.string()),
+      uploadedFile: v.optional(v.string()),
+      thumbnail: v.optional(v.string()),
+      alt: v.optional(v.string()),
+      caption: v.optional(v.string()),
+      dimensions: v.optional(v.object({
+        width: v.number(),
+        height: v.number(),
+      })),
+      fileSize: v.optional(v.number()),
+      mimeType: v.optional(v.string()),
+      lastModified: v.optional(v.number()),
+    })),
+  })),
+}),
+
+// 2. Corrigiu getCompleteFlowSimple query mapping
+nodes: nodes.map(node => ({
+  id: node.nodeId,
+  type: node.type,
+  position: node.position,
+  data: {
+    label: node.data.label,
+    type: node.data.type,
+    color: node.data.color,
+    properties: node.data.properties, // ← FALTAVA ESTA LINHA
+  },
+})),
+```
+
+##### **2. 🎨 Modal Z-Index Collision**
+**Problema:** Label do node ficava visível através do modal de configuração
+
+**Solução:** Aumentou z-index dos modais de `[9999]` para `[99999]`
+
+##### **3. 🖼️ Image Persistence Bug**
+**Problema:** Preview de imagem aparecia por 1 segundo e desaparecia ao recarregar
+
+**Root Cause:** `getCompleteFlowSimple` não incluía `properties` no mapeamento dos nodes
+
+**Impact:** Dados eram salvos no banco mas não carregados de volta na interface
+
+##### **4. 🔄 onNodeUpdate Integration**
+**Problema:** Sistema não tinha callback para updates completos de node data
+
+**Solução:** Implementou `handleNodeUpdate` no Canvas.tsx:
+```typescript
+const handleNodeUpdate = useCallback(async (nodeId: string, newData: any) => {
+  if (!activeFlowId) return;
+  
+  try {
+    // Update local state immediately for responsive UI
+    setNodes((prevNodes: Node[]) => 
+      prevNodes.map(node => 
+        node.id === nodeId 
+          ? { ...node, data: newData }
+          : node
+      )
+    );
+
+    // Save to Convex with complete node data
+    await saveNodeMutation({
+      flowId: activeFlowId,
+      nodeId: nodeId,
+      // ... complete node data
+      data: newData,
+    });
+
+  } catch (error) {
+    console.error('Failed to update node:', error);
+    // Revert local state on error
+    // ...
+  }
+}, [activeFlowId, saveNodeMutation, setNodes]);
+```
+
+#### **User Experience Melhorias:**
+
+##### **URL Nodes:**
+1. **Configuração Intuitiva**: Clique direito → "Configure URL"
+2. **Preview Automático**: Thumbnail e título aparecem no node
+3. **Navegação Rápida**: Clique esquerdo abre URL em nova aba
+4. **Validação Visual**: Feedback claro para URLs válidas/inválidas
+
+##### **Image Nodes:**
+1. **Dual Input**: Tab para "URL" ou "Upload" 
+2. **Drag & Drop**: Interface moderna para upload de arquivos
+3. **Validação Robusta**: 5MB limit, tipos válidos (JPEG, PNG, GIF, WebP)
+4. **Fullscreen Viewer**: 
+   - Zoom in/out com scroll do mouse
+   - Pan com drag
+   - Controles de teclado: ESC, +/-, 0, I
+   - Informações da imagem (dimensões, tamanho)
+
+#### **Database Schema Evolution:**
+
+```typescript
+// Extended CustomNodeData interface
+interface CustomNodeData {
+  label: string;
+  type: string;
+  color?: string;
+  description?: string;
+  properties?: {
+    // URL-specific properties
+    url?: string;
+    redirectUrl?: string;
+    conversionGoal?: string;
+    urlPreview?: {
+      title?: string;
+      description?: string;
+      thumbnail?: string;
+      favicon?: string;
+      lastFetched?: number;
+      fetchError?: string;
+    };
+    
+    // Image-specific properties
+    image?: {
+      url?: string;
+      uploadedFile?: string;
+      thumbnail?: string;
+      alt?: string;
+      caption?: string;
+      dimensions?: {
+        width: number;
+        height: number;
+      };
+      fileSize?: number;
+      mimeType?: string;
+      lastModified?: number;
+    };
+  };
+}
+```
+
+#### **Technical Implementation Highlights:**
+
+##### **Modal System:**
+- **Theme Integration**: Todos os modais seguem sistema de tema dark/light
+- **Keyboard Navigation**: Suporte completo para ESC, Enter, Tab
+- **Proper Focus Management**: Auto-focus em campos relevantes
+- **Responsive Design**: Funciona em diferentes tamanhos de tela
+
+##### **File Upload System:**
+```typescript
+// Advanced file validation
+const validateFile = (file: File): string | null => {
+  const maxSize = 5 * 1024 * 1024; // 5MB
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  
+  if (file.size > maxSize) {
+    return `File size must be less than ${maxSize / (1024 * 1024)}MB`;
+  }
+  
+  if (!allowedTypes.includes(file.type)) {
+    return 'File type not supported. Please use JPEG, PNG, GIF, or WebP.';
+  }
+  
+  return null;
+};
+
+// Metadata extraction using Image API
+const extractImageMetadata = (file: File): Promise<ImageMetadata> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      resolve({
+        dimensions: { width: img.width, height: img.height },
+        fileSize: file.size,
+        mimeType: file.type,
+        lastModified: file.lastModified,
+      });
+    };
+    img.src = URL.createObjectURL(file);
+  });
+};
+```
+
+##### **State Management:**
+- **Optimistic Updates**: UI updates immediately, sync with server afterward
+- **Error Recovery**: Automatic reversion on save failures
+- **Data Persistence**: Complete node data preserved across sessions
+- **Loading States**: Visual feedback during operations
+
+#### **Benefícios Alcançados:**
+
+- ✅ **Funcionalidade Completa**: URL e Image nodes totalmente operacionais
+- ✅ **Persistência Robusta**: Dados salvos e carregados corretamente
+- ✅ **UX Profissional**: Modais polidos com feedback visual
+- ✅ **Performance Otimizada**: Schema validation consistente
+- ✅ **Acessibilidade**: Alt text, keyboard navigation, screen reader friendly
+- ✅ **Error Handling**: Graceful degradation e recovery automático
+- ✅ **Type Safety**: TypeScript interfaces completas
+
+#### **Debugging Process:**
+
+##### **Schema Validation Errors:**
+1. **Identificou mutations inconsistentes** via console errors
+2. **Mapeou validators faltantes** comparando saveNode vs saveBatchFlowData
+3. **Testou individualmente** cada mutation para isolar problemas
+4. **Sincronizou schema** com `npx convex dev --once`
+5. **Validou end-to-end** com dados reais
+
+##### **Image Persistence Bug:**
+1. **Reproducível**: Imagem aparece → reload → desaparece
+2. **Network tab**: Dados chegam ao servidor corretamente
+3. **Query analysis**: getCompleteFlowSimple não incluía properties
+4. **Fixed mapping**: Adicionou properties ao node mapping
+5. **Validated**: Imagens persistem após reload
+
+#### **Lições Aprendidas:**
+
+##### **1. Convex Schema Consistency**
+- **Todos os mutations** devem usar validators consistentes
+- **Mudanças de schema** requerem sync completo (`npx convex dev --once`)
+- **Queries e mutations** devem estar alinhadas com schema
+- **Testar end-to-end** após mudanças de schema é crucial
+
+##### **2. Modal Z-Index Management**
+- **Layer hierarchy** deve ser planejada desde o início
+- **Z-index values** devem ter gaps suficientes para expansão
+- **Component isolation** previne conflitos visuais
+- **Teste em contexto** sempre verificar modais sobre conteúdo complexo
+
+##### **3. File Upload UX**
+- **Validation feedback** deve ser imediata e clara
+- **Progress indicators** melhoram perceived performance
+- **Metadata extraction** adiciona valor significativo para usuários
+- **Error recovery** deve ser transparent e automática
+
+##### **4. State Synchronization Patterns**
+- **Optimistic updates** + **error recovery** = melhor UX
+- **Complete data objects** evitam partial updates problemáticas
+- **Loading states** devem refletir operações reais
+- **Local state** deve sempre refletir server state accuracy
+
+#### **Future Enhancements:**
+- [ ] **Bulk image upload** para múltiplas imagens
+- [ ] **Image optimization** automática (resize, compression)
+- [ ] **URL preview caching** para melhor performance  
+- [ ] **Drag & drop** para imagens direto no canvas
+- [ ] **URL validation** mais robusta com verificação de availability
+- [ ] **Image editing** básico (crop, rotate) dentro do modal
+
+---
+
+## 🛠️ Updated Debug Process
+
+### Para Problemas de Convex Schema:
+1. **Identificar mutation específica** via console error
+2. **Comparar validators** entre diferentes mutations
+3. **Verificar query mappings** para ensure data consistency
+4. **Sync schema** com `npx convex dev --once`
+5. **Test end-to-end** com dados reais completos
+6. **Validate all CRUD operations** após mudanças
+
+### Para Problemas de Modal UI:
+1. **Check z-index hierarchy** e conflitos visuais
+2. **Test modal em diferentes contextos** (sobre nodes, canvas, sidebar)
+3. **Validate keyboard navigation** e accessibility
+4. **Check responsive behavior** em diferentes screen sizes
+5. **Test theme switching** para dark/light mode compatibility
+
+### Para Problemas de File Upload:
+1. **Test validation** com diferentes tipos e tamanhos de arquivo
+2. **Check error handling** para uploads falhados
+3. **Validate metadata extraction** para diferentes formatos
+4. **Test drag & drop** vs click-to-upload scenarios
+5. **Check cleanup** de URLs temporárias e memory leaks
+
+### Para State Synchronization Issues:
+1. **Track data flow** local state → server → local state
+2. **Check optimistic updates** e error recovery paths
+3. **Validate loading states** durante operações async
+4. **Test concurrent operations** e race conditions
+5. **Verify data persistence** após page refresh
