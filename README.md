@@ -2,7 +2,7 @@
 
 Uma ferramenta visual intuitiva para criação e simulação de funis e fluxogramas de marketing, permitindo validar hipóteses e cenários de conversão de forma simples, prática e visual.
 
-![Flow X0 Banner](./Assets/banner.png)
+![Flow X0 Banner](./Assets/images/Flow_X_banner.png)
 
 ## 📋 Sobre o Projeto
 
