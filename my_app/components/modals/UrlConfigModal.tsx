@@ -43,16 +43,122 @@ export default function UrlConfigModal({ isOpen, onClose, onSave, initialData }:
     }
   };
 
-  const generateMockPreview = (url: string): UrlPreviewData => {
+  // Real URL preview generation using multiple APIs
+  const generateRealPreview = async (url: string): Promise<UrlPreviewData> => {
     try {
       const urlObj = new URL(url);
       const domain = urlObj.hostname.replace('www.', '');
+      console.log('🔍 Generating real preview for:', url);
+
+      // Try multiple methods to get real preview data
+      let title = `${domain}`;
+      let description = '';
+      let thumbnail = '';
+      let favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+
+      // Method 1: Try to use microlink.io API (free tier)
+      try {
+        console.log('📡 Attempting microlink.io API...');
+        const microlinkResponse = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}&screenshot=true&meta=false`);
+        
+        if (microlinkResponse.ok) {
+          const microlinkData = await microlinkResponse.json();
+          console.log('✅ Microlink data:', microlinkData);
+          
+          if (microlinkData.status === 'success' && microlinkData.data) {
+            const data = microlinkData.data;
+            title = data.title || title;
+            description = data.description || '';
+            thumbnail = data.screenshot?.url || '';
+            favicon = data.logo?.url || favicon;
+            
+            return {
+              title,
+              description,
+              thumbnail,
+              favicon,
+              lastFetched: Date.now(),
+            };
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Microlink.io API failed:', error);
+      }
+
+      // Method 2: Try urlpreview.vercel.app (free service)
+      try {
+        console.log('📡 Attempting urlpreview API...');
+        const previewResponse = await fetch(`https://urlpreview.vercel.app/api/v1/preview?url=${encodeURIComponent(url)}`);
+        
+        if (previewResponse.ok) {
+          const previewData = await previewResponse.json();
+          console.log('✅ URLPreview data:', previewData);
+          
+          title = previewData.title || title;
+          description = previewData.description || description;
+          thumbnail = previewData.image || thumbnail;
+          
+          return {
+            title,
+            description,
+            thumbnail,
+            favicon,
+            lastFetched: Date.now(),
+          };
+        }
+      } catch (error) {
+        console.warn('⚠️ URLPreview API failed:', error);
+      }
+
+      // Method 3: Try screenshot using htmlcsstoimage.com API (if available)
+      if (!thumbnail) {
+        try {
+          console.log('📡 Attempting screenshot API...');
+          // Use a free screenshot service
+          thumbnail = `https://image.thum.io/get/width/300/crop/200/${encodeURIComponent(url)}`;
+          console.log('📸 Using screenshot service for thumbnail');
+        } catch (error) {
+          console.warn('⚠️ Screenshot API failed:', error);
+        }
+      }
+
+      // Method 4: Fallback to better placeholder
+      if (!thumbnail) {
+        thumbnail = `https://via.placeholder.com/300x200/4f46e5/ffffff?text=${encodeURIComponent(domain.split('.')[0])}`;
+        console.log('🎨 Using enhanced placeholder');
+      }
+
+      return {
+        title,
+        description: description || `Visit ${domain}`,
+        thumbnail,
+        favicon,
+        lastFetched: Date.now(),
+      };
+
+    } catch (error) {
+      console.error('❌ All preview methods failed:', error);
+      return {
+        title: 'Unable to preview',
+        description: 'Could not load website preview',
+        lastFetched: Date.now(),
+        fetchError: `Preview failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+    }
+  };
+
+  // Fallback mock preview (improved)
+  const generateFallbackPreview = (url: string): UrlPreviewData => {
+    try {
+      const urlObj = new URL(url);
+      const domain = urlObj.hostname.replace('www.', '');
+      const siteName = domain.split('.')[0];
       
       return {
-        title: `Website - ${domain}`,
-        description: `Content from ${domain}`,
-        thumbnail: `https://via.placeholder.com/300x200/6366f1/ffffff?text=${encodeURIComponent(domain)}`,
-        favicon: `https://www.google.com/s2/favicons?domain=${domain}`,
+        title: `${siteName.charAt(0).toUpperCase() + siteName.slice(1)} - ${domain}`,
+        description: `Visit ${domain} for more information`,
+        thumbnail: `https://via.placeholder.com/300x200/4f46e5/ffffff?text=${encodeURIComponent(siteName)}`,
+        favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
         lastFetched: Date.now(),
       };
     } catch {
@@ -65,17 +171,25 @@ export default function UrlConfigModal({ isOpen, onClose, onSave, initialData }:
     }
   };
 
-  const handleUrlChange = (newUrl: string) => {
+  const handleUrlChange = async (newUrl: string) => {
     setUrl(newUrl);
     setError('');
     
     if (newUrl && validateUrl(newUrl)) {
       setIsLoading(true);
-      // Simulate API call delay
-      setTimeout(() => {
-        setPreview(generateMockPreview(newUrl));
+      
+      try {
+        console.log('🚀 Starting URL preview generation...');
+        const previewData = await generateRealPreview(newUrl);
+        setPreview(previewData);
+        console.log('✅ Preview generated successfully:', previewData);
+      } catch (error) {
+        console.error('❌ Real preview failed, using fallback:', error);
+        // Use fallback preview if real preview fails
+        setPreview(generateFallbackPreview(newUrl));
+      } finally {
         setIsLoading(false);
-      }, 500);
+      }
     } else {
       setPreview(null);
     }
