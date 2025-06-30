@@ -499,6 +499,41 @@ export const saveBatchFlowData = mutation({
         label: v.string(),
         type: v.string(),
         color: v.optional(v.string()),
+        description: v.optional(v.string()),
+        properties: v.optional(v.object({
+          url: v.optional(v.string()),
+          redirectUrl: v.optional(v.string()),
+          conversionGoal: v.optional(v.string()),
+          // URL Preview properties
+          urlPreview: v.optional(v.object({
+            title: v.optional(v.string()),
+            description: v.optional(v.string()),
+            thumbnail: v.optional(v.string()),
+            favicon: v.optional(v.string()),
+            lastFetched: v.optional(v.number()),
+            fetchError: v.optional(v.string()),
+          })),
+          // Image properties
+          image: v.optional(v.object({
+            url: v.optional(v.string()),
+            uploadedFile: v.optional(v.string()),
+            thumbnail: v.optional(v.string()),
+            alt: v.optional(v.string()),
+            caption: v.optional(v.string()),
+            dimensions: v.optional(v.object({
+              width: v.number(),
+              height: v.number(),
+            })),
+            fileSize: v.optional(v.number()),
+            mimeType: v.optional(v.string()),
+            lastModified: v.optional(v.number()),
+          })),
+          customFields: v.optional(v.array(v.object({
+            key: v.string(),
+            value: v.string(),
+            type: v.union(v.literal("text"), v.literal("number"), v.literal("boolean"), v.literal("url")),
+          }))),
+        })),
       }),
       style: v.optional(v.object({
         width: v.optional(v.number()),
