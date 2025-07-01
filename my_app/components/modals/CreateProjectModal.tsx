@@ -160,7 +160,12 @@ export default function CreateProjectModal({
       />
       
       {/* Modal */}
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
+      <div 
+        role="dialog" 
+        aria-modal="true"
+        aria-labelledby="create-project-title"
+        className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto"
+      >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -168,7 +173,10 @@ export default function CreateProjectModal({
               <Plus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 
+                id="create-project-title"
+                className="text-lg font-semibold text-gray-900 dark:text-white"
+              >
                 Create New Project
               </h2>
             </div>

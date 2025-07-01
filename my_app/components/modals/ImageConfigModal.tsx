@@ -191,16 +191,25 @@ export default function ImageConfigModal({ isOpen, onClose, onSave, initialData 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999] p-4">
-      <div className={`w-full max-w-lg mx-auto rounded-xl shadow-2xl ${
-        theme.name === 'dark' ? 'bg-gray-800' : 'bg-white'
-      }`} style={{ minWidth: '480px' }}>
+      <div 
+        role="dialog" 
+        aria-modal="true"
+        aria-labelledby="image-modal-title"
+        className={`w-full max-w-lg mx-auto rounded-xl shadow-2xl ${
+          theme.name === 'dark' ? 'bg-gray-800' : 'bg-white'
+        }`} 
+        style={{ minWidth: '480px' }}
+      >
         {/* Header */}
         <div className={`flex items-center justify-between p-6 border-b ${
           theme.name === 'dark' ? 'border-gray-700' : 'border-gray-200'
         }`}>
-          <h2 className={`text-xl font-semibold ${
-            theme.name === 'dark' ? 'text-white' : 'text-gray-900'
-          }`}>
+          <h2 
+            id="image-modal-title"
+            className={`text-xl font-semibold ${
+              theme.name === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}
+          >
             Configure Image
           </h2>
           <button

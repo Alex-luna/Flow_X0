@@ -496,9 +496,39 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     [setSelectedEdges]
   );
 
+  // Helper function to check if we're in an editable element
+  const isInEditableElement = useCallback(() => {
+    const activeElement = document.activeElement;
+    if (!activeElement) return false;
+    
+    const tagName = activeElement.tagName.toLowerCase();
+    
+    // Check for editable elements
+    if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') {
+      return true;
+    }
+    
+    // Check for contenteditable elements
+    if (activeElement.hasAttribute('contenteditable')) {
+      return true;
+    }
+    
+    // Check if element is inside a modal by looking for modal class/attribute
+    const isInModal = activeElement.closest('[role="dialog"]') || 
+                     activeElement.closest('.modal') ||
+                     activeElement.closest('[data-modal]');
+    
+    return !!isInModal;
+  }, []);
+
   // Handle keyboard shortcuts and deletion for selected edges
   const onKeyDown = useCallback(
     (event: KeyboardEvent) => {
+      // Skip custom shortcuts if we're in an editable element or modal
+      if (isInEditableElement()) {
+        return; // Let the browser handle the event naturally
+      }
+
       // Prevent default behavior for our custom shortcuts
       const isCtrlOrCmd = event.ctrlKey || event.metaKey;
       
@@ -531,7 +561,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
         setSelectedEdges([]);
       }
     },
-    [selectedEdges, setEdges, setSelectedEdges, copySelectedNodes, pasteNodes, duplicateSelectedNodes, selectAllNodes]
+    [selectedEdges, setEdges, setSelectedEdges, copySelectedNodes, pasteNodes, duplicateSelectedNodes, selectAllNodes, isInEditableElement]
   );
 
   const onDrop = useCallback(
