@@ -115,6 +115,12 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }
     edgeId: string | null;
   }>({ show: false, x: 0, y: 0, edgeId: null });
   const [showMiniMap, setShowMiniMap] = useState(true);
+  
+  // Estado para cores customizadas das edges e paleta de cores
+  const [customEdgeColors, setCustomEdgeColors] = useState<Record<string, string>>({});
+  const [showColorPalette, setShowColorPalette] = useState(false);
+  const [selectedEdgeForColor, setSelectedEdgeForColor] = useState<string | null>(null);
+  const [palettePosition, setPalettePosition] = useState({ x: 0, y: 0 });
 
   // Estado para auto-conexão de nodes
   const [connectionInProgress, setConnectionInProgress] = useState<{
@@ -135,6 +141,45 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }
   const generateNodeId = useCallback(() => {
     return `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }, []);
+
+  // Função para obter a cor de uma edge (customizada ou padrão)
+  const getEdgeColor = useCallback((edgeId: string) => {
+    return customEdgeColors[edgeId] || theme.colors.canvas.edge;
+  }, [customEdgeColors, theme.colors.canvas.edge]);
+
+  // Função para alterar a cor de uma edge
+  const changeEdgeColor = useCallback((edgeId: string, color: string, isDefault: boolean = false) => {
+    setCustomEdgeColors(prev => {
+      const newColors = { ...prev };
+      if (isDefault) {
+        delete newColors[edgeId]; // Remove cor customizada para voltar ao padrão
+      } else {
+        newColors[edgeId] = color;
+      }
+      return newColors;
+    });
+    
+    // Limpar estados de seleção após alterar cor
+    setShowColorPalette(false);
+    setSelectedEdgeForColor(null);
+    setSelectedEdges([]); // Remove edge do estado selecionado
+  }, []);
+
+  // Função para deletar edge selecionada
+  const deleteSelectedEdge = useCallback(() => {
+    if (selectedEdgeForColor) {
+      setEdges((eds: Edge[]) => eds.filter(e => e.id !== selectedEdgeForColor));
+      // Remove cor customizada também
+      setCustomEdgeColors(prev => {
+        const newColors = { ...prev };
+        delete newColors[selectedEdgeForColor];
+        return newColors;
+      });
+      setShowColorPalette(false);
+      setSelectedEdgeForColor(null);
+      setSelectedEdges([]);
+    }
+  }, [selectedEdgeForColor, setEdges]);
 
 
 
@@ -200,11 +245,25 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }
     strokeDasharray: '6 4',
   }), [theme.colors.canvas.edge]);
 
+  // Paleta de cores para edges (excluindo vermelhos e cinzas)
+  const edgeColorPalette = React.useMemo(() => [
+    { name: 'Original', color: theme.colors.canvas.edge, isDefault: true },
+    { name: 'Azul', color: '#4A90E2' },
+    { name: 'Verde', color: '#7ED321' },
+    { name: 'Roxo', color: '#BD10E0' },
+    { name: 'Laranja', color: '#F5A623' },
+    { name: 'Rosa', color: '#E91E63' },
+    { name: 'Verde Água', color: '#50E3C2' },
+    { name: 'Azul Índigo', color: '#5856D6' },
+    { name: 'Amarelo', color: '#FFAE03' },
+  ], [theme.colors.canvas.edge]);
+
   const selectedEdgeStyle = React.useMemo(() => ({
-    stroke: theme.colors.canvas.edgeSelected,
-    strokeWidth: 3,
-    strokeDasharray: '6 4',
-  }), [theme.colors.canvas.edgeSelected]);
+    stroke: '#FE5F55', // Coral suave em vez de vermelho
+    strokeWidth: 4,
+    strokeDasharray: '8 6',
+    filter: 'drop-shadow(0 0 8px rgba(254, 95, 85, 0.4))',
+  }), []);
 
   const edgeOptions = React.useMemo(() => ({
     animated: true,
@@ -487,12 +546,26 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }
     }));
   }, [nodes, connectionInProgress.isConnecting, connectionInProgress.hoveredNode, connectionInProgress.sourceNode]);
 
-  // Handle edge click - select edge for deletion
+  // Handle edge click - select edge and show color palette
   const onEdgeClick = useCallback(
     (event: React.MouseEvent, edge: Edge) => {
       event.stopPropagation();
-      console.log('🎯 Selecting edge:', edge.id);
+      console.log('🎯 Selecting edge for color picker:', edge.id);
+      
+      // Definir edge selecionada
       setSelectedEdges([edge.id]);
+      setSelectedEdgeForColor(edge.id);
+      
+      // Calcular posição da paleta de cores
+      const rect = reactFlowWrapper.current?.getBoundingClientRect();
+      if (rect) {
+        setPalettePosition({
+          x: event.clientX - rect.left,
+          y: event.clientY - rect.top
+        });
+      }
+      
+      setShowColorPalette(true);
     },
     [setSelectedEdges]
   );
@@ -767,15 +840,36 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }
     }
   }, [contextMenu.edgeId, setEdges, setContextMenu]);
 
-  // Update edges with dynamic styling based on selection
+
+
+  // Update edges with dynamic styling based on selection and custom colors
   const styledEdges = React.useMemo(() => {
-    return edges.map(edge => ({
-      ...edge,
-      style: selectedEdges.includes(edge.id) ? selectedEdgeStyle : animatedEdgeStyle,
-      animated: true,
-      className: selectedEdges.includes(edge.id) ? 'selected-edge' : '',
-    }));
-  }, [edges, selectedEdges]);
+    return edges.map(edge => {
+      const isSelected = selectedEdges.includes(edge.id);
+      const customColor = getEdgeColor(edge.id);
+      
+      if (isSelected) {
+        return {
+          ...edge,
+          style: selectedEdgeStyle,
+          animated: true,
+          className: 'selected-edge',
+        };
+      } else {
+        const customStyle = {
+          ...animatedEdgeStyle,
+          stroke: customColor,
+        };
+        
+        return {
+          ...edge,
+          style: customStyle,
+          animated: true,
+          className: '',
+        };
+      }
+    });
+  }, [edges, selectedEdges, selectedEdgeStyle, animatedEdgeStyle, getEdgeColor]);
 
   // TODO: Add viewport sync when ReactFlow 12 is available with onViewportChange
 
@@ -896,6 +990,20 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }
     )
   }), []); // Empty dependencies - never recreated
 
+  // Handler para fechar paleta de cores
+  const handleClosePalette = useCallback(() => {
+    setShowColorPalette(false);
+    setSelectedEdgeForColor(null);
+    setSelectedEdges([]);
+  }, []);
+
+  // Handler para clique fora da paleta
+  const handleCanvasClick = useCallback(() => {
+    if (showColorPalette) {
+      handleClosePalette();
+    }
+  }, [showColorPalette, handleClosePalette]);
+
   return (
     <div className="w-full h-full flex flex-col">
       {/* Controls Bar */}
@@ -1005,7 +1113,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }
           onConnectEnd={onConnectEnd}
           onEdgeClick={onEdgeClick}
           onEdgeContextMenu={onEdgeContextMenu}
-          onPaneClick={onPaneClick}
+          onPaneClick={handleCanvasClick}
           onInit={setReactFlowInstance}
           onMove={(event, viewport) => setCurrentViewport(viewport)}
 
@@ -1090,6 +1198,79 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }
             >
               <span style={{ color: theme.colors.accent.danger }}>🗑️</span>
               Delete Connection
+            </button>
+          </div>
+        )}
+
+        {/* Color Palette */}
+        {showColorPalette && selectedEdgeForColor && (
+          <div
+            className="fixed rounded-lg shadow-lg z-[10001] p-3"
+            style={{
+              left: palettePosition.x,
+              top: palettePosition.y,
+              backgroundColor: theme.colors.background.elevated,
+              border: `1px solid ${theme.colors.border.primary}`,
+              boxShadow: '0 10px 25px -3px rgba(0, 0, 0, 0.3)',
+              minWidth: '200px',
+            }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span 
+                className="text-sm font-medium"
+                style={{ color: theme.colors.text.primary }}
+              >
+                🎨 Edge Color
+              </span>
+              <button
+                onClick={handleClosePalette}
+                className="text-sm opacity-60 hover:opacity-100 transition-opacity"
+                style={{ color: theme.colors.text.secondary }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            {/* Color Grid */}
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              {edgeColorPalette.map((colorOption, index) => (
+                <button
+                  key={index}
+                  onClick={() => changeEdgeColor(selectedEdgeForColor, colorOption.color, colorOption.isDefault)}
+                  className="relative w-10 h-10 rounded-lg border-2 transition-all duration-200 hover:scale-110 hover:shadow-lg"
+                  style={{
+                    backgroundColor: colorOption.color,
+                    borderColor: getEdgeColor(selectedEdgeForColor) === colorOption.color 
+                      ? theme.colors.text.primary 
+                      : theme.colors.border.primary,
+                  }}
+                  title={colorOption.name}
+                >
+                  {colorOption.isDefault && (
+                    <span className="absolute inset-0 flex items-center justify-center text-xs">
+                      ↺
+                    </span>
+                  )}
+                  {getEdgeColor(selectedEdgeForColor) === colorOption.color && (
+                    <span className="absolute inset-0 flex items-center justify-center text-white text-lg">
+                      ✓
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Delete Button */}
+            <button
+              onClick={deleteSelectedEdge}
+              className="flex items-center justify-center gap-2 w-full px-3 py-2 text-sm transition-all duration-200 hover:brightness-110 rounded-lg"
+              style={{
+                backgroundColor: theme.colors.accent.danger,
+                color: theme.colors.text.inverse,
+              }}
+            >
+              <span>🗑️</span>
+              Delete Edge
             </button>
           </div>
         )}
