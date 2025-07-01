@@ -503,7 +503,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
     
     const tagName = activeElement.tagName.toLowerCase();
     
-    // Check for editable elements
+    // Check for editable elements (these should allow native copy/paste)
     if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') {
       return true;
     }
@@ -513,12 +513,25 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
       return true;
     }
     
-    // Check if element is inside a modal by looking for modal class/attribute
-    const isInModal = activeElement.closest('[role="dialog"]') || 
-                     activeElement.closest('.modal') ||
-                     activeElement.closest('[data-modal]');
+    // Check if we have text selected in any element (for copy operations)
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) {
+      return true;
+    }
     
-    return !!isInModal;
+    // Additional check: if element is inside a modal AND is focusable/editable
+    const isInModal = activeElement.closest('[role="dialog"]');
+    if (isInModal) {
+      // Check if the focused element is interactive (button, input, etc.)
+      const interactiveElements = ['input', 'textarea', 'select', 'button'];
+      const isInteractive = interactiveElements.includes(tagName) ||
+                           activeElement.hasAttribute('contenteditable') ||
+                           activeElement.hasAttribute('tabindex');
+      
+      return isInteractive;
+    }
+    
+    return false;
   }, []);
 
   // Handle keyboard shortcuts and deletion for selected edges
