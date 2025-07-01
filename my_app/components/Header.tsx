@@ -94,6 +94,10 @@ export default function Header() {
   const handleProjectCreated = (projectId: string) => {
     console.log('✅ Project created:', projectId);
     setIsProjectDropdownOpen(false);
+    
+    // Navigate to the newly created project
+    selectProject(projectId as Id<"projects">);
+    console.log('🎯 Automatically navigated to new project:', projectId);
   };
 
   const handleEditSuccess = (id: string) => {
