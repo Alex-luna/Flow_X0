@@ -15,7 +15,29 @@ import { useProjects, ProjectData } from '../hooks/useProjects';
 import { useProject } from '../contexts/ProjectContext';
 import { Id } from '../convex/_generated/dataModel';
 
-export default function Header() {
+interface HeaderProps {
+  currentProject?: {
+    id: string;
+    name: string;
+    folder: string;
+    lastModified: Date;
+    status: 'active' | 'draft' | 'archived';
+  };
+  onProjectChange?: (project: {
+    id: string;
+    name: string;
+    folder: string;
+    lastModified: Date;
+    status: 'active' | 'draft' | 'archived';
+  }) => void;
+  onEnterPresentationMode: () => void;
+}
+
+export default function Header({ 
+  currentProject: legacyProject, 
+  onProjectChange, 
+  onEnterPresentationMode 
+}: HeaderProps) {
   const { theme, isDark, toggleTheme, isHydrated } = useTheme();
   const [selectedFolder, setSelectedFolder] = useState<string>("all");
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
@@ -456,6 +478,18 @@ export default function Header() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
             </svg>
           )}
+        </button>
+
+        {/* Presentation Mode Button */}
+        <button
+          onClick={onEnterPresentationMode}
+          className="p-2 rounded-lg transition-colors hover:brightness-110"
+          style={{ backgroundColor: theme.colors.background.secondary }}
+          title="Entrar no modo apresentação (F11)"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: theme.colors.text.primary }}>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+          </svg>
         </button>
 
         <button 

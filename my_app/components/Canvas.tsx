@@ -68,9 +68,10 @@ interface NodeBounds {
 
 interface CanvasProps {
   onAddNode: (type: string, position?: { x: number; y: number }) => void;
+  isPresentationMode?: boolean;
 }
 
-const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
+const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }) => {
   const { theme, isDark } = useTheme();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   
@@ -988,7 +989,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode }) => {
 
       {/* Canvas */}
       <div 
-        className="flex-1" 
+        className={`flex-1 ${isPresentationMode ? 'presentation-mode-canvas' : ''}`}
         ref={reactFlowWrapper}
         onDrop={onWrapperDrop}
         onDragOver={onWrapperDragOver}
