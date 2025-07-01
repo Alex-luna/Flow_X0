@@ -780,6 +780,169 @@ if (lastLoadedProject === 'SAVING_BLOCK') {
 11. **Performance adaptativa** é melhor que otimização prematura
 12. **Early exit optimization** pode melhorar 2-3x a performance em busca linear
 
+## ✅ Nova Funcionalidade: Persistência de Cores das Edges - RESOLVIDA
+
+### **Data**: 2025-01-02
+### **Status**: ✅ **PROBLEMA CRÍTICO RESOLVIDO**
+
+**Problema Identificado:** Cores customizadas das edges eram perdidas ao recarregar a página, sempre voltando à cor padrão do tema.
+
+#### **Investigação Realizada:**
+
+##### **Logs de Sucesso Confusos:**
+```bash
+✅ Edge color updated successfully: reactflow__edge-node_1751344632017_uxk5os5j4 #FFAE03
+```
+**Conclusão Inicial INCORRETA:** "O salvamento está funcionando!"
+
+##### **Análise do Fluxo de Dados:**
+1. **Salvamento**: ✅ Funcionando (Convex recebia `style.stroke` correto)
+2. **Carregamento**: ✅ Funcionando (edges vinham com `style.stroke` do banco)
+3. **Renderização**: ❌ **PROBLEMA AQUI!**
+
+#### **🎯 Root Cause Descoberto - Sobrescrita de Style em styledEdges:**
+
+**Código Problemático:**
+```typescript
+// ❌ ANTES (problemático) - Canvas.tsx linha ~988
+const styledEdges = React.useMemo(() => {
+  return edges.map(edge => {
+    const isSelected = selectedEdges.includes(edge.id);
+    const customColor = getEdgeColor(edge.id); // ← Função que já perdeu referência
+    
+    if (!isSelected) {
+      const customStyle = {
+        ...animatedEdgeStyle,  // ← Stroke padrão do tema
+        stroke: customColor,   // ← getEdgeColor não encontra style.stroke original
+      };
+      
+      return {
+        ...edge,
+        style: customStyle,  // ← SOBRESCREVE o style original do Convex!
+      };
+    }
+  });
+}, [edges, selectedEdges, selectedEdgeStyle, animatedEdgeStyle, getEdgeColor]);
+```
+
+**Por que Falhava:**
+1. **Edge carrega do Convex** com `style.stroke` customizado ✅
+2. **styledEdges substitui completamente** o `style` da edge ❌
+3. **getEdgeColor não encontra mais** o `style.stroke` original ❌
+4. **Resultado**: Sempre retorna cor padrão do tema ❌
+
+#### **🔧 Solução Implementada:**
+
+```typescript
+// ✅ DEPOIS (correto) - Preserva style original
+const styledEdges = React.useMemo(() => {
+  return edges.map(edge => {
+    const isSelected = selectedEdges.includes(edge.id);
+    
+    if (!isSelected) {
+      // Preservar stroke original da edge (vinda do Convex) ou usar padrão
+      const strokeColor = edge.style?.stroke || theme.colors.canvas.edge;
+      
+      const customStyle = {
+        ...animatedEdgeStyle,
+        ...edge.style,     // ← Preserva TODOS os styles originais
+        stroke: strokeColor, // ← Usa cor original ou padrão
+      };
+      
+      return {
+        ...edge,
+        style: customStyle,
+        animated: true,
+        className: '',
+      };
+    }
+  });
+}, [edges, selectedEdges, selectedEdgeStyle, animatedEdgeStyle, theme.colors.canvas.edge]);
+```
+
+**Mudanças Específicas:**
+1. **Removido**: `getEdgeColor(edge.id)` que causava perda de referência
+2. **Adicionado**: `...edge.style` para preservar styles originais do Convex
+3. **Simplificado**: `const strokeColor = edge.style?.stroke || theme.colors.canvas.edge`
+4. **Resultado**: Style original é preservado durante renderização
+
+#### **Fluxo Correto Agora:**
+
+```mermaid
+graph TD
+  A[User muda cor] --> B[Salva no Convex ✅]
+  B --> C[Page reload]
+  C --> D[Edge carrega com style.stroke ✅]
+  D --> E[styledEdges preserva style original ✅]
+  E --> F[Cor persistente! 🎯]
+```
+
+#### **Debugging Insights Aprendidos:**
+
+##### **1. 🚨 Logs de Sucesso Podem Enganar**
+- **Salvamento funcionando** ≠ **Problema resolvido**
+- **Network requests com sucesso** ≠ **Data persistence funcionando**
+- **Importante**: Sempre testar full cycle (save → reload → display)
+
+##### **2. 🔍 ReactFlow State Management é Complexo**
+- **Edges passam por múltiplos processamentos** antes de renderizar
+- **styledEdges** pode sobrescrever propriedades importantes
+- **Style preservation** deve ser explícito com `...edge.style`
+
+##### **3. 🎨 CSS Style Precedence Matters**
+- **Ordem dos spreads** importa: `...animatedEdgeStyle, ...edge.style`
+- **Último spread wins**: `edge.style` deve vir após styles padrão
+- **Specific properties override**: `stroke` específico sobrescreve spread
+
+#### **Lições Técnicas Críticas:**
+
+##### **1. State Mutation vs Style Preservation**
+```typescript
+// ❌ ANTI-PATTERN: Substituir style completamente
+style: { stroke: newColor, ...otherDefaults }
+
+// ✅ PATTERN: Preservar e extend style original  
+style: { ...originalStyle, stroke: newColor }
+```
+
+##### **2. Debug Strategy for Persistent UI State**
+1. **Verificar salvamento**: Network tab + database
+2. **Verificar carregamento**: Console.log raw data
+3. **Verificar processamento**: Console.log processed data  
+4. **Verificar renderização**: Inspect final DOM elements
+5. **Teste full cycle**: Save → reload → verify display
+
+##### **3. React useMemo Dependencies**
+```typescript
+// ❌ PROBLEMÁTICO: Dependency que muda constantemente
+}, [edges, selectedEdges, getEdgeColor]); // getEdgeColor tinha deps complexas
+
+// ✅ SOLUÇÃO: Dependencies simples e estáveis
+}, [edges, selectedEdges, theme.colors.canvas.edge]); // Valores diretos
+```
+
+#### **Impact da Resolução:**
+- ✅ **Cores das edges persistem** entre sessions
+- ✅ **UX consistente** para personalização
+- ✅ **Performance melhorada** (menos dependencies em useMemo)
+- ✅ **Código mais simples** (menos indirection)
+- ✅ **Debugging facilitado** (fluxo de dados linear)
+
+#### **Testes de Validação Realizados:**
+1. **Mudança de cor** → Funciona ✅
+2. **Page reload** → Cor mantida ✅
+3. **Múltiplas edges** → Todas as cores preservadas ✅
+4. **Troca de tema** → Edges customizadas mantêm cor, não-customizadas seguem tema ✅
+5. **Workflow completo** → Save → navigate → return → reload → cores consistentes ✅
+
+#### **Arquivos Modificados:**
+- `my_app/components/Canvas.tsx` - Função `styledEdges` (linha ~975)
+- `my_app/convex/flows.ts` - Query e mutations para incluir style fields
+- `my_app/hooks/useCanvasSync.ts` - Carregamento completo de edge styles
+
+### **🎯 Key Takeaway:**
+**Em apps React complexos, nem sempre o problema está onde você suspeita. Logs de sucesso podem mascarar problemas de renderização downstream. Sempre trace o full data flow: save → load → process → render.**
+
 ---
 
 ## Outros Takeaways
@@ -1852,3 +2015,35 @@ position: {
 6. **Verify cleanup** de event listeners em unmount
 7. **Test concurrent shortcuts** e race conditions
 8. **Validate smart positioning** para prevent node overlap
+
+### Para Problemas de Persistência Visual (UI State):
+1. **Trace full data flow**: save → database → load → process → render
+2. **Separate concerns**: 
+   - ✅ Network/Database (check DevTools Network tab)
+   - ✅ Data Loading (console.log raw data from queries)
+   - ✅ Data Processing (console.log processed data in useMemo)
+   - ❌ Rendering (inspect final DOM elements)
+3. **Watch for style overwrites**: Check if useMemo/processing steps preserve original styles
+4. **Test reload cycle**: Sempre testar save → refresh → verify display
+5. **Dependencies audit**: useMemo deps podem estar causando re-computation incorreta
+6. **Style preservation**: Use `...originalStyle, newProperty` pattern instead of complete replacement
+7. **Beware of success logs**: "Saved successfully" ≠ "Rendered correctly"
+
+### Pattern for ReactFlow Style Debugging:
+```typescript
+// 1. Log original data from database
+console.log('🔍 Raw edge from DB:', edge);
+
+// 2. Log after processing/styling  
+console.log('🎨 Styled edge:', styledEdge);
+
+// 3. Check if style.stroke is preserved
+console.log('🖌️ Final stroke:', styledEdge.style?.stroke);
+
+// 4. Use proper style preservation pattern
+const processedStyle = {
+  ...defaultStyle,
+  ...originalStyle, // ← Preserve original properties
+  specificProperty: newValue,
+};
+```

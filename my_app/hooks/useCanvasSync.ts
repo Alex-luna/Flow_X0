@@ -111,6 +111,9 @@ export function useCanvasSync(autoSaveDelay: number = 2000) {
           sourceHandle: edge.sourceHandle,
           targetHandle: edge.targetHandle,
           animated: edge.animated || true,
+          style: edge.style || undefined,
+          type: edge.type || undefined,
+          label: edge.label || undefined,
         }));
 
         setNodes(reactFlowNodes);

@@ -91,6 +91,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }
   
   // Add mutation hook for individual node updates
   const saveNodeMutation = useMutation(api.flows.saveNode);
+  const saveEdgeMutation = useMutation(api.flows.saveEdge);
   
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [currentViewport, setCurrentViewport] = useState<ViewportInfo>({ x: 0, y: 0, zoom: 1 });
@@ -121,6 +122,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }
   const [showColorPalette, setShowColorPalette] = useState(false);
   const [selectedEdgeForColor, setSelectedEdgeForColor] = useState<string | null>(null);
   const [palettePosition, setPalettePosition] = useState({ x: 0, y: 0 });
+  const [isChangingEdgeColor, setIsChangingEdgeColor] = useState(false);
 
   // Estado para auto-conexão de nodes
   const [connectionInProgress, setConnectionInProgress] = useState<{
@@ -144,26 +146,97 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }
 
   // Função para obter a cor de uma edge (customizada ou padrão)
   const getEdgeColor = useCallback((edgeId: string) => {
+    // Primeiro, tentar obter a cor da edge atual (que pode ter vindo do Convex)
+    const currentEdge = edges.find(e => e.id === edgeId);
+    if (currentEdge?.style?.stroke) {
+      return currentEdge.style.stroke;
+    }
+    // Fallback para cores customizadas locais (para compatibilidade)
     return customEdgeColors[edgeId] || theme.colors.canvas.edge;
-  }, [customEdgeColors, theme.colors.canvas.edge]);
+  }, [edges, customEdgeColors, theme.colors.canvas.edge]);
 
-  // Função para alterar a cor de uma edge
-  const changeEdgeColor = useCallback((edgeId: string, color: string, isDefault: boolean = false) => {
-    setCustomEdgeColors(prev => {
-      const newColors = { ...prev };
-      if (isDefault) {
-        delete newColors[edgeId]; // Remove cor customizada para voltar ao padrão
-      } else {
-        newColors[edgeId] = color;
+  // Função para alterar a cor de uma edge (com persistência no Convex)
+  const changeEdgeColor = useCallback(async (edgeId: string, color: string, isDefault: boolean = false) => {
+    if (!activeFlowId || isChangingEdgeColor) return;
+    
+    setIsChangingEdgeColor(true);
+    try {
+      console.log('🎨 Changing edge color:', edgeId, color, isDefault);
+      
+      // Encontrar a edge para atualizar
+      const edgeToUpdate = edges.find(e => e.id === edgeId);
+      if (!edgeToUpdate) return;
+
+      const newColor = isDefault ? theme.colors.canvas.edge : color;
+
+      // Atualizar estado local imediatamente para UI responsiva
+      setEdges((prevEdges: Edge[]) => 
+        prevEdges.map(edge => 
+          edge.id === edgeId 
+            ? { 
+                ...edge, 
+                style: { 
+                  ...edge.style, 
+                  stroke: newColor 
+                } 
+              }
+            : edge
+        )
+      );
+
+      // Salvar no Convex usando a mutation saveEdge
+      const styleData = {
+        strokeWidth: typeof edgeToUpdate.style?.strokeWidth === 'number' ? edgeToUpdate.style.strokeWidth : 2,
+        strokeDasharray: typeof edgeToUpdate.style?.strokeDasharray === 'string' ? edgeToUpdate.style.strokeDasharray : '6 4',
+        ...(isDefault ? {} : { stroke: color }), // Só incluir stroke se não for padrão
+      };
+
+      const updateData = {
+        flowId: activeFlowId,
+        edgeId: edgeToUpdate.id,
+        source: edgeToUpdate.source,
+        target: edgeToUpdate.target,
+        sourceHandle: edgeToUpdate.sourceHandle || undefined,
+        targetHandle: edgeToUpdate.targetHandle || undefined,
+        type: edgeToUpdate.type,
+        animated: edgeToUpdate.animated,
+        style: styleData,
+        label: typeof edgeToUpdate.label === 'string' ? edgeToUpdate.label : undefined,
+      };
+      
+      await saveEdgeMutation(updateData);
+      console.log('✅ Edge color updated successfully:', edgeId, newColor);
+      
+      // Remover da lista de cores customizadas locais (já salvo no Convex)
+      setCustomEdgeColors(prev => {
+        const newColors = { ...prev };
+        delete newColors[edgeId];
+        return newColors;
+      });
+      
+    } catch (error) {
+      console.error('❌ Failed to save edge color:', error);
+      
+      // Reverter estado local em caso de erro
+      const originalEdge = edges.find(e => e.id === edgeId);
+      if (originalEdge) {
+        setEdges((prevEdges: Edge[]) => 
+          prevEdges.map(edge => 
+            edge.id === edgeId 
+              ? originalEdge
+              : edge
+          )
+        );
       }
-      return newColors;
-    });
+    } finally {
+      setIsChangingEdgeColor(false);
+    }
     
     // Limpar estados de seleção após alterar cor
     setShowColorPalette(false);
     setSelectedEdgeForColor(null);
     setSelectedEdges([]); // Remove edge do estado selecionado
-  }, []);
+  }, [activeFlowId, edges, saveEdgeMutation, setEdges, theme.colors.canvas.edge, isChangingEdgeColor]);
 
   // Função para deletar edge selecionada
   const deleteSelectedEdge = useCallback(() => {
@@ -273,18 +346,62 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }
   }), [animatedEdgeStyle]);
 
   const onConnect: OnConnect = useCallback(
-    (params: Connection) => {
-      // Prevent self-connections
-      if (params.source === params.target) return;
+    async (params: Connection) => {
+      // Prevent self-connections and ensure valid source/target
+      if (!params.source || !params.target || params.source === params.target) return;
       
-      // Add animated edge
-      setEdges((eds: Edge[]) => {
-        const exists = eds.some(e => e.source === params.source && e.target === params.target);
-        if (exists) return eds;
-        return addEdge({ ...params, ...edgeOptions }, eds);
-      });
+      // Check if edge already exists
+      const exists = edges.some(e => e.source === params.source && e.target === params.target);
+      if (exists) return;
+      
+      // Create new edge with unique ID
+      const newEdgeId = `edge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const newEdge: Edge = { 
+        id: newEdgeId,
+        source: params.source,
+        target: params.target,
+        sourceHandle: params.sourceHandle || undefined,
+        targetHandle: params.targetHandle || undefined,
+        animated: true,
+        style: {
+          stroke: theme.colors.canvas.edge,
+          strokeWidth: 2,
+          strokeDasharray: '6 4',
+        },
+        focusable: true,
+        deletable: true,
+      };
+      
+      // Add to local state immediately
+      setEdges((eds: Edge[]) => [...eds, newEdge]);
+      
+      // Save to Convex immediately if we have activeFlowId
+      if (activeFlowId) {
+        try {
+          await saveEdgeMutation({
+            flowId: activeFlowId,
+            edgeId: newEdgeId,
+            source: params.source,
+            target: params.target,
+            sourceHandle: params.sourceHandle || undefined,
+            targetHandle: params.targetHandle || undefined,
+            type: undefined,
+            animated: true,
+            style: {
+              stroke: theme.colors.canvas.edge,
+              strokeWidth: 2,
+              strokeDasharray: '6 4',
+            },
+          });
+          console.log('✅ Edge saved to Convex:', newEdgeId);
+        } catch (error) {
+          console.error('❌ Failed to save edge to Convex:', error);
+          // Remove from local state if save failed
+          setEdges((eds: Edge[]) => eds.filter(e => e.id !== newEdgeId));
+        }
+      }
     },
-    [setEdges, edgeOptions]
+    [setEdges, edges, activeFlowId, saveEdgeMutation, theme.colors.canvas.edge]
   );
 
   // Handler para quando inicia uma conexão
@@ -846,7 +963,6 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }
   const styledEdges = React.useMemo(() => {
     return edges.map(edge => {
       const isSelected = selectedEdges.includes(edge.id);
-      const customColor = getEdgeColor(edge.id);
       
       if (isSelected) {
         return {
@@ -856,9 +972,13 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }
           className: 'selected-edge',
         };
       } else {
+        // Preservar stroke original da edge (vinda do Convex) ou usar padrão
+        const strokeColor = edge.style?.stroke || theme.colors.canvas.edge;
+        
         const customStyle = {
           ...animatedEdgeStyle,
-          stroke: customColor,
+          ...edge.style, // Preserva todos os styles originais
+          stroke: strokeColor, // Usa a cor original ou padrão
         };
         
         return {
@@ -869,7 +989,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }
         };
       }
     });
-  }, [edges, selectedEdges, selectedEdgeStyle, animatedEdgeStyle, getEdgeColor]);
+  }, [edges, selectedEdges, selectedEdgeStyle, animatedEdgeStyle, theme.colors.canvas.edge]);
 
   // TODO: Add viewport sync when ReactFlow 12 is available with onViewportChange
 
@@ -1237,14 +1357,17 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }
                 <button
                   key={index}
                   onClick={() => changeEdgeColor(selectedEdgeForColor, colorOption.color, colorOption.isDefault)}
-                  className="relative w-10 h-10 rounded-lg border-2 transition-all duration-200 hover:scale-110 hover:shadow-lg"
+                  disabled={isChangingEdgeColor}
+                  className={`relative w-10 h-10 rounded-lg border-2 transition-all duration-200 hover:scale-110 hover:shadow-lg ${
+                    isChangingEdgeColor ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                   style={{
                     backgroundColor: colorOption.color,
                     borderColor: getEdgeColor(selectedEdgeForColor) === colorOption.color 
                       ? theme.colors.text.primary 
                       : theme.colors.border.primary,
                   }}
-                  title={colorOption.name}
+                  title={`${colorOption.name}${isChangingEdgeColor ? ' (Salvando...)' : ''}`}
                 >
                   {colorOption.isDefault && (
                     <span className="absolute inset-0 flex items-center justify-center text-xs">

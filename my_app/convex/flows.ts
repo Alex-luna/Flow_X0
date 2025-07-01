@@ -166,6 +166,13 @@ export const getCompleteFlowSimple = query({
         sourceHandle: v.optional(v.string()),
         targetHandle: v.optional(v.string()),
         animated: v.optional(v.boolean()),
+        type: v.optional(v.string()),
+        style: v.optional(v.object({
+          stroke: v.optional(v.string()),
+          strokeWidth: v.optional(v.number()),
+          strokeDasharray: v.optional(v.string()),
+        })),
+        label: v.optional(v.string()),
       })),
     }),
     v.null()
@@ -217,6 +224,9 @@ export const getCompleteFlowSimple = query({
         sourceHandle: edge.sourceHandle,
         targetHandle: edge.targetHandle,
         animated: edge.animated,
+        type: edge.type,
+        style: edge.style,
+        label: edge.label,
       })),
     };
   },
