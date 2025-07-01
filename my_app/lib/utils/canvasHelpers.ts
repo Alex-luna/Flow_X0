@@ -129,8 +129,8 @@ export function findFreePosition(
 
       testPosition = snapToGridEnabled ? snapToGrid(candidatePosition) : candidatePosition;
 
-      // Ensure position is within reasonable bounds
-      if (testPosition.x < -1000 || testPosition.x > 2000 || testPosition.y < -1000 || testPosition.y > 2000) {
+      // Ensure position is within reasonable bounds (expanded for infinite canvas)
+      if (testPosition.x < -50000 || testPosition.x > 50000 || testPosition.y < -50000 || testPosition.y > 50000) {
         continue;
       }
 

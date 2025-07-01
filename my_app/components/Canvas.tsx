@@ -1248,7 +1248,7 @@ const Canvas: React.FC<CanvasProps> = ({ onAddNode, isPresentationMode = false }
           selectionOnDrag
           minZoom={0.5}
           maxZoom={2}
-          nodeExtent={[[-1000, -1000], [2000, 2000]]}
+          nodeExtent={[[-100000, -100000], [100000, 100000]]}
           connectionLineStyle={{ 
             stroke: theme.colors.canvas.edge, 
             strokeWidth: 2, 
